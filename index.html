@@ -335,6 +335,19 @@ function faceScan(cb){
   setTimeout(()=>{try{ov.remove();}catch(e){} cb&&cb();},1300);
 }
 function _digits(x){ return (x||'').replace(/\D/g,''); }
+function _brlNum(s){ s=String(s||'').replace(/[^\d.,]/g,''); if(!s)return 0; s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isNaN(n)?0:n; }
+function _fmtMax(n){ return 'R$ '+Number(n).toLocaleString('pt-BR'); }
+function _validField(key,val,cfg){
+  const v=(val||'').trim();
+  if(!v) return {ok:false,msg:'Preencha este campo para continuar.'};
+  if(key==='cpf'){ if(_digits(v).length!==11) return {ok:false,msg:'Informe um CPF válido (11 dígitos).'}; }
+  else if(key.indexOf('cep')>=0){ if(_digits(v).length!==8) return {ok:false,msg:'Informe um CEP válido (8 dígitos).'}; }
+  else if(key==='wa'||key.indexOf('tel')>=0||key.indexOf('whats')>=0){ const d=_digits(v); if(d.length<10||d.length>11) return {ok:false,msg:'Informe um WhatsApp válido com DDD.'}; }
+  else if(key==='placa'){ const p=v.toUpperCase().replace(/[^A-Z0-9]/g,''); if(!/^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(p)) return {ok:false,msg:'Informe uma placa válida (ex.: ABC1D23).'}; }
+  else if(/(valor|capital|renda|aluguel|bens)/.test(key)){ const n=_brlNum(v); if(n<=0) return {ok:false,msg:'Informe um valor maior que zero.'}; if(cfg&&cfg.min&&n<cfg.min) return {ok:false,msg:'Valor mínimo: '+_fmtMax(cfg.min)+'.'}; if(cfg&&cfg.max&&n>cfg.max) return {ok:false,msg:'Valor máximo permitido: '+_fmtMax(cfg.max)+'.'}; }
+  else { if(v.length<2) return {ok:false,msg:'Preencha este campo para continuar.'}; }
+  return {ok:true};
+}
 function _matchPending(x,email,cpf,phone){
   email=(email||'').toLowerCase(); cpf=_digits(cpf); phone=_digits(phone);
   if(email&&(x.email||'')===email)return true;
@@ -748,8 +761,8 @@ const FC={
   n_func:{type:'txt',q:'Quantos funcionários serão segurados?',sub:'Total de vidas no seguro coletivo',lbl:'Nº DE FUNCIONÁRIOS',ph:'Ex: 50',key:'n_func',im:'numeric',mask:v=>v.replace(/\D/g,'').slice(0,5),tips:['Mínimo de 3 funcionários para contratação coletiva.','Cubra todos da sua equipe com um único contrato.']},
   nascimento:{type:'txt',q:'Qual sua data de nascimento?',sub:'Usamos para calcular o perfil de risco',lbl:'DATA DE NASCIMENTO',ph:'DD/MM/AAAA',key:'nascimento',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,8);if(v.length>4)return v.replace(/(\d{2})(\d{2})(\d+)/,'$1/$2/$3');if(v.length>2)return v.replace(/(\d{2})(\d+)/,'$1/$2');return v},tips:['A idade é um dos fatores que compõem o preço do seguro de vida.']},
   profissao:{type:'txt',q:'Qual é a sua profissão?',sub:'Pode impactar a cobertura de invalidez',lbl:'PROFISSÃO',ph:'Ex: Analista, Professor...',key:'profissao',im:'text',mask:null,tips:['Profissões de maior risco podem ter coberturas específicas.']},
-  capital_vida:{type:'txt',q:'Qual capital segurado deseja?',sub:'Valor que seus beneficiários receberão',lbl:'CAPITAL SEGURADO',ph:'R$ 0,00',key:'capital_vida',im:'numeric',mask:maskMoney,tips:['Recomendamos 5 a 10x sua renda anual.','Você pode ajustar o valor a qualquer momento.']},
-  capital_ap:{type:'txt',q:'Qual capital deseja para acidentes?',sub:'Valor em caso de invalidez ou morte acidental',lbl:'CAPITAL SEGURADO',ph:'R$ 0,00',key:'capital_ap',im:'numeric',mask:maskMoney,tips:['Sem carência — cobertura desde o primeiro dia.']},
+  capital_vida:{type:'txt',q:'Qual capital segurado deseja?',sub:'Valor que seus beneficiários receberão',lbl:'CAPITAL SEGURADO',ph:'R$ 0,00',key:'capital_vida',im:'numeric',mask:maskMoney,min:20000,max:1000000,tips:['Recomendamos 5 a 10x sua renda anual.','Mínimo R$ 20.000 · máximo R$ 1.000.000.']},
+  capital_ap:{type:'txt',q:'Qual capital deseja para acidentes?',sub:'Valor em caso de invalidez ou morte acidental',lbl:'CAPITAL SEGURADO',ph:'R$ 0,00',key:'capital_ap',im:'numeric',mask:maskMoney,min:10000,max:500000,tips:['Sem carência — cobertura desde o primeiro dia.','Mínimo R$ 10.000 · máximo R$ 500.000.']},
   beneficiario:{type:'txt',q:'Quem será o beneficiário?',sub:'Nome completo do beneficiário principal',lbl:'BENEFICIÁRIO',ph:'Nome completo',key:'beneficiario',im:'text',mask:null,tips:['Você pode adicionar mais beneficiários na sua apólice.']},
   valor_divida:{type:'txt',q:'Qual o valor total da dívida?',sub:'Saldo devedor do empréstimo ou financiamento',lbl:'VALOR DA DÍVIDA',ph:'R$ 0,00',key:'valor_divida',im:'numeric',mask:maskMoney,tips:['O seguro quita o saldo devedor em caso de sinistro.']},
   prazo_emp:{type:'txt',q:'Qual o prazo do empréstimo?',sub:'Número de meses restantes',lbl:'PRAZO RESTANTE (MESES)',ph:'Ex: 36',key:'prazo_emp',im:'numeric',mask:v=>v.replace(/\D/g,'').slice(0,3),tips:['O seguro tem a mesma duração do seu empréstimo.']},
@@ -1227,15 +1240,70 @@ function rApoliceDetail(){
 </div>`}
 
 // SINISTRO — TIPO
-function rSinistro(){
-  const tipos=[
-    {id:'colisao',n:'Colisão / Batida',s:'Acidente envolvendo veículo',ico:'car'},
-    {id:'roubo',n:'Roubo ou Furto',s:'Veículo ou objeto subtraído',ico:'shield'},
+function _prodFamily(k){
+  if(!k)return 'generic';
+  if(k==='casa'||k==='moradia')return 'casa';
+  if(k==='auto')return 'auto';
+  if(k==='celular')return 'celular';
+  if(['vidaativa','vidacoletivo','acidentes','prestamista','vida'].indexOf(k)>=0)return 'vida';
+  if(['cartao','pix','bolsa','garantia'].indexOf(k)>=0)return 'financeiro';
+  return 'generic';
+}
+function _sinistroFamily(){
+  const pol=S.curPol;
+  if(pol&&pol.resid)return 'casa';
+  let k=(pol&&pol.prodKey)||S.prod||'';
+  if(!k&&pol&&pol.icon){ const ic=pol.icon; if(ic==='car')k='auto';else if(ic==='phone')k='celular';else if(ic==='heart'||ic==='family')k='vida';else if(ic==='credit'||ic==='pix'||ic==='bag'||ic==='warranty')k='cartao';else if(ic==='house')k='casa'; }
+  return _prodFamily(k);
+}
+const _SIN_TIPOS={
+  auto:[
+    {id:'colisao',n:'Colisão / Batida',s:'Acidente envolvendo o veículo',ico:'car'},
+    {id:'roubo',n:'Roubo ou Furto',s:'Veículo subtraído',ico:'shield'},
     {id:'incendio',n:'Incêndio ou Explosão',s:'Danos causados por fogo',ico:'bolt'},
-    {id:'eletrico',n:'Danos Elétricos',s:'Queima por raio ou curto',ico:'bolt'},
+    {id:'terceiros',n:'Danos a terceiros',s:'Você causou dano a outra pessoa',ico:'family'},
+    {id:'vidros',n:'Quebra de vidros',s:'Para-brisa, vigias e faróis',ico:'shield'},
     {id:'fenomeno',n:'Fenômeno natural',s:'Enchente, granizo, vendaval',ico:'house'},
     {id:'outros',n:'Outros danos',s:'Descreva sua ocorrência',ico:'doc'},
-  ];
+  ],
+  celular:[
+    {id:'roubo',n:'Roubo ou Furto',s:'Aparelho subtraído',ico:'shield'},
+    {id:'quebra',n:'Quebra de tela / acidental',s:'Queda ou dano físico ao aparelho',ico:'phone'},
+    {id:'liquido',n:'Dano por líquido',s:'Contato com água ou outros líquidos',ico:'phone'},
+    {id:'defeito',n:'Defeito de funcionamento',s:'Falha elétrica fora da garantia',ico:'bolt'},
+    {id:'outros',n:'Outros danos',s:'Descreva sua ocorrência',ico:'doc'},
+  ],
+  vida:[
+    {id:'falecimento',n:'Falecimento do segurado',s:'Comunicação de óbito',ico:'heart'},
+    {id:'invalidez',n:'Invalidez',s:'Invalidez permanente por acidente',ico:'shield'},
+    {id:'doenca',n:'Doença grave',s:'Diagnóstico de doença coberta',ico:'doc'},
+    {id:'outros',n:'Outra solicitação',s:'Descreva sua ocorrência',ico:'doc'},
+  ],
+  financeiro:[
+    {id:'naorec',n:'Compra não reconhecida',s:'Transação que você não fez',ico:'credit'},
+    {id:'clonagem',n:'Clonagem de cartão',s:'Uso indevido dos seus dados',ico:'lock'},
+    {id:'coacao',n:'Saque ou compra sob coação',s:'Você foi forçado a transacionar',ico:'shield'},
+    {id:'pixn',n:'PIX / TED não autorizado',s:'Transferência indevida',ico:'pix'},
+    {id:'outros',n:'Outra ocorrência',s:'Descreva o que aconteceu',ico:'doc'},
+  ],
+  casa:[
+    {id:'incendio',n:'Incêndio, raio ou explosão',s:'Cobertura básica',ico:'bolt'},
+    {id:'roubo',n:'Roubo ou furto',s:'Bens subtraídos do imóvel',ico:'shield'},
+    {id:'eletrico',n:'Danos elétricos',s:'Queima por raio ou curto',ico:'bolt'},
+    {id:'vendaval',n:'Vendaval / granizo',s:'Eventos da natureza',ico:'house'},
+    {id:'alagamento',n:'Alagamento / inundação',s:'Entrada de água',ico:'house'},
+    {id:'tubulacao',n:'Vazamento / ruptura',s:'Tanques e tubulações',ico:'house'},
+    {id:'vidros',n:'Quebra de vidros',s:'Vidros, espelhos e mármores',ico:'shield'},
+    {id:'outros',n:'Outros danos',s:'Descreva sua ocorrência',ico:'doc'},
+  ],
+  generic:[
+    {id:'roubo',n:'Roubo ou Furto',s:'Bem subtraído',ico:'shield'},
+    {id:'dano',n:'Dano ao bem segurado',s:'Avaria ou prejuízo',ico:'bolt'},
+    {id:'outros',n:'Outra ocorrência',s:'Descreva o que aconteceu',ico:'doc'},
+  ],
+};
+function rSinistro(){
+  const tipos=_SIN_TIPOS[_sinistroFamily()]||_SIN_TIPOS.generic;
   return`<div class="scr" style="background:var(--navy)">
   ${sb(true)}
   ${nb({back:'go-home',d:true,cancel:false,title:'Abrir Sinistro'})}
@@ -1290,9 +1358,9 @@ function rSinistroConfirm(){
   const num='SIN-'+String(Date.now()).slice(-6);
   const steps=[
     {n:'Ocorrência registrada',sub:'Protocolo gerado com sucesso',done:true,t:'Agora'},
-    {n:'Em análise',sub:'Nossa equipe está avaliando',done:false,t:'Até 24h'},
-    {n:'Documentação',sub:'Pode ser solicitada por WhatsApp',done:false,t:'Em breve'},
-    {n:'Indenização',sub:'Pagamento após aprovação',done:false,t:'Em breve'},
+    {n:'Em análise',sub:'Nossa equipe está avaliando e retornará em breve',done:false,t:'Até 30 dias após a entrega dos documentos'},
+    {n:'Documentação',sub:'Pode ser solicitada pelo WhatsApp',done:false,t:''},
+    {n:'Indenização',sub:'Pagamento após aprovação',done:false,t:''},
   ];
   return`<div class="scr" style="background:var(--surf)">
   ${sb(false)}
@@ -1317,7 +1385,7 @@ function rSinistroConfirm(){
         </div>
         <div style="padding-bottom:${i<3?'4px':'0'}">
           <div style="font-size:14px;font-weight:700;color:${s.done?'var(--txt1)':'var(--txt3)'}">${s.n}</div>
-          <div style="font-size:12px;color:var(--txt3);margin-top:1px">${s.sub} · ${s.t}</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:1px">${s.sub}${s.t?' · '+s.t:''}</div>
         </div>
       </div>`).join('')}
     </div>
@@ -1447,6 +1515,7 @@ ${stepDots(flow,idx)}
   <div class="sec-badge" style="margin-top:20px">${ico('lock',14,'#46EF80')} <span>Dados protegidos pela LGPD</span></div>
 </div>
 <div style="padding:20px 24px 44px;flex-shrink:0">
+  <div id="finp-msg" style="font-size:12.5px;color:#ff6b6b;min-height:16px;margin-bottom:8px;line-height:1.4"></div>
   <button class="btn btn-neon" id="btn-fnext" data-sk="${stepKey}">Continuar</button>
 </div>
 </div>`}
@@ -2036,6 +2105,39 @@ ${sb(true)}
 
 // HOME DASHBOARD
 // ===================== TELA INDICAÇÕES =====================
+function rComoIndicacao(){
+  const steps=[
+    {ico:'doc',t:'Copie seu link',d:'Cada cliente tem um link de indicação único, gerado no app.'},
+    {ico:'family',t:'Compartilhe com quem você confia',d:'Envie para amigos e familiares que tenham perfil para contratar.'},
+    {ico:'check',t:'Receba seu bônus',d:'Quando a indicação contrata e a apólice fica ativa, você recebe um crédito na sua mensalidade.'},
+  ];
+  const regras=[
+    'O bônus é um crédito de mensalidade aplicado ao seu plano — não é pagamento em dinheiro.',
+    'A indicação precisa contratar por meio do seu link e manter a apólice ativa.',
+    'O crédito é válido enquanto as duas apólices (a sua e a do indicado) estiverem vigentes.',
+    'Programa promocional, sujeito a regras, limites e disponibilidade; pode ser alterado ou encerrado mediante aviso.',
+  ];
+  return`<div class="scr" style="background:var(--surf);overflow-y:auto">
+  ${sb(false)}
+  ${nb({back:'go-indicacoes',d:false,cancel:false,title:'Como funciona'})}
+  <div style="padding:8px 24px 36px">
+    <div style="width:60px;height:60px;border-radius:18px;background:rgba(70,239,128,.14);display:flex;align-items:center;justify-content:center;margin:6px 0 16px">${ico('family',30,'#279989')}</div>
+    <div style="font-size:22px;font-weight:800;color:var(--txt1);line-height:1.25;margin-bottom:6px">Indique e ganhe bônus</div>
+    <div style="font-size:13.5px;color:var(--txt2);line-height:1.55;margin-bottom:20px">Um jeito simples de economizar indicando quem você confia. Veja o passo a passo:</div>
+    ${steps.map((s,i)=>`<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">
+      <div style="width:42px;height:42px;border-radius:12px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--card-sh)">${ico(s.ico,20,'#279989')}</div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:700;color:var(--txt1)">${i+1}. ${s.t}</div><div style="font-size:12.5px;color:var(--txt2);margin-top:2px;line-height:1.45">${s.d}</div></div>
+    </div>`).join('')}
+    <div style="background:#fff;border-radius:16px;padding:16px 18px;box-shadow:var(--card-sh);margin-top:8px">
+      <div style="font-size:11px;font-weight:800;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Regras do programa</div>
+      ${regras.map(r=>`<div style="display:flex;gap:9px;align-items:flex-start;margin-bottom:9px"><div style="flex-shrink:0;margin-top:2px">${ico('check',15,'#46EF80')}</div><div style="font-size:12.5px;color:var(--txt2);line-height:1.45">${r}</div></div>`).join('')}
+    </div>
+  </div>
+  <div style="padding:0 24px 36px;flex-shrink:0">
+    <button class="btn btn-neon" data-a="copy-link">Copiar meu link de indicação</button>
+  </div>
+  </div>`;
+}
 function rIndicacoes(){
   const name=S.form.name||'Você';
   const tabs=[{ico:'house',lbl:'Início',tab:'home'},{ico:'family',lbl:'Indicações',tab:'indicacoes'},{ico:'doc',lbl:'Conta',tab:'conta'}];
@@ -2045,10 +2147,9 @@ function rIndicacoes(){
     <div class="ti-lbl">${t.lbl}</div>
   </div>`).join('')}</div>`;
   const prods=[
-    {id:'auto',name:'Seguro Auto',sub:'Indique e ganhe 1 mês grátis'},
-    {id:'celular',name:'Seguro Celular',sub:'Indique e ganhe 1 mês grátis'},
-    {id:'vida',name:'Seguro Vida',sub:'Indique e ganhe 1 mês grátis'},
-    {id:'casa',name:'Casa Protegida+',sub:'Indique e ganhe 1 mês grátis'},
+    {id:'celular',name:'Seguro Celular',sub:'Indique e ganhe bônus no seu plano'},
+    {id:'vida',name:'Seguro Vida',sub:'Indique e ganhe bônus no seu plano'},
+    {id:'residencial',name:'Seguro Residencial',sub:'Indique e ganhe bônus no seu plano'},
   ];
   return`<div class="scr" style="background:var(--surf)">
 ${sb(false)}
@@ -2060,8 +2161,8 @@ ${sb(false)}
     <div style="width:52px;height:52px;background:#e8fdf3;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px">
       ${ico('family',28,'#46EF80')}
     </div>
-    <div style="font-size:18px;font-weight:800;color:var(--txt1);line-height:1.4;margin-bottom:6px">Indique amigos que<br>você confia e <span style="color:#46EF80">ganhe meses de graça.</span></div>
-    <div style="font-size:14px;color:var(--txt2);margin-bottom:16px;line-height:1.6">Para cada amigo que contratar um seguro pelo seu link, você ganha 1 mês gratuito no seu plano.</div>
+    <div style="font-size:18px;font-weight:800;color:var(--txt1);line-height:1.4;margin-bottom:6px">Indique amigos que<br>você confia e <span style="color:#46EF80">ganhe bônus no seu plano.</span></div>
+    <div style="font-size:14px;color:var(--txt2);margin-bottom:16px;line-height:1.6">A cada amigo que contratar pelo seu link, você recebe um crédito de mensalidade, conforme as regras do programa de indicação.</div>
     <button class="btn btn-neon" data-a="copy-link" style="font-size:15px">Copiar meu link de indicação</button>
     <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--teal);font-weight:700;cursor:pointer" data-a="how-ref">Veja como funciona →</div>
   </div>
@@ -2373,11 +2474,11 @@ function rHome(){
   const _pal=['#46EF80','#279989','#1fd1a3','#0a7d72','#00d2a8','#3ddc97'];
   let covBar='';
   if(all.length&&totalCov>0){
-    const segs=all.map((p,i)=>({pct:Math.max(3,parseBRL(p.cov)/totalCov*100),label:p.type,col:_pal[i%_pal.length]}));
+    const segs=all.map((p,i)=>({pct:parseBRL(p.cov)/totalCov*100,label:p.type,col:_pal[i%_pal.length]}));
     covBar=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
       <div style="font-size:10px;color:rgba(255,255,255,.5);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:9px">Distribuição da proteção</div>
       <div style="display:flex;height:9px;border-radius:6px;overflow:hidden;background:rgba(255,255,255,.06);gap:2px">
-        ${segs.map(s=>`<div style="width:${s.pct}%;background:${s.col};border-radius:3px"></div>`).join('')}
+        ${segs.map(s=>`<div style="width:${s.pct}%;min-width:4px;background:${s.col};border-radius:3px"></div>`).join('')}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px 14px;margin-top:11px">
         ${segs.map(s=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:2px;background:${s.col}"></div><span style="font-size:11px;color:rgba(255,255,255,.62)">${escapeHtml(s.label)} · ${Math.round(s.pct)}%</span></div>`).join('')}
@@ -2517,6 +2618,7 @@ function nav(id){
     case 'success':    goTo('success',rSuccess()); break;
     case 'home':       goTo('home',rHome()); break;
     case 'indicacoes': goTo('indicacoes',rIndicacoes()); break;
+    case 'como-indicacao': goTo('como-indicacao',rComoIndicacao()); break;
     case 'conta':      goTo('conta',rConta()); break;
     case 'perfil':     goTo('perfil',rPerfil()); break;
     case 'chat':       goTo('chat',rChat()); break;
@@ -2991,7 +3093,7 @@ function bind(el){
         if(pm==='card'){const dg=(S.cardForm&&S.cardForm.num||'').replace(/\D/g,'');const last4=dg.slice(-4);const br=(typeof detectBrand==='function'?detectBrand(dg):'');pagamento='Cartão •••• '+(last4||'????')+(br?' ('+br+')':'');}
         else if(pm==='pix')pagamento='PIX';
         else if(pm==='boleto')pagamento='Boleto';
-        const pol={type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov,pagamento:pagamento,accent:'#279989',rgb:'39,153,137',ts:Date.now()};
+        const pol={type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov,pagamento:pagamento,accent:'#279989',rgb:'39,153,137',ts:Date.now(),prodKey:S.prod};
         if(p.resid&&S.res){ const q=resPremio(); pol.cov=fmtBRL0(S.res.lmi); pol.price=fmtBRL(q.mensal)+'/mês'; pol.item=((RES.tiposImovel.find(t=>t.v===S.res.tipo)||{}).n)||'Residência'; pol.resid={modalidade:S.res.modalidade,lmi:S.res.lmi,vig:S.res.vig,cobs:Object.keys(S.res.cobs).filter(k=>S.res.cobs[k]).map(Number),franquia:S.res.franquia,assist:S.res.assist,pet:S.res.pet,premio:q.mensal,cep:S.res.cep}; }
         const u=await currentUser();
         if(u){ await savePolicy(pol); }
@@ -3019,7 +3121,9 @@ function bind(el){
       setTimeout(()=>{b.textContent='Copiar meu link de indicação';b.style.background='';},2200);
     }
     else if(a==='sair'){ await authLogout(); S.authed=false; S.policies=[]; S.form={}; S.profile=null; S.chat=null; S.userEmail=null; S.userCpf=null; S.userPhone=null; _homeFetched=false; _contaFetched=false; try{localStorage.removeItem('vs_chat');}catch(e){} nav('splash'); }
-    else if(a==='how-ref'||a.startsWith('share-')||a.startsWith('menu-')||a==='complete-profile'){ toast('Em breve 🙂'); }
+    else if(a==='how-ref')nav('como-indicacao');
+    else if(a==='go-indicacoes')nav('indicacoes');
+    else if(a.startsWith('share-')||a.startsWith('menu-')||a==='complete-profile'){ toast('Em breve 🙂'); }
   }));
 
   // Tab bar
@@ -3060,7 +3164,7 @@ function bind(el){
       setTimeout(()=>inp.focus(),150);
     }
     btnFN.addEventListener('click',()=>{
-      if(inp&&cfg)S.form[cfg.key]=inp.value;
+      if(inp&&cfg){ const r=_validField(cfg.key,inp.value,cfg); const m=el.querySelector('#finp-msg'); if(!r.ok){ if(m)m.textContent=r.msg; inp.style.borderColor='#ff6b6b'; inp.focus(); return; } if(m)m.textContent=''; S.form[cfg.key]=inp.value; }
       formNextStep(sk);
     });
   }
