@@ -1595,7 +1595,7 @@ ${sb(true)}
 // ===================== JORNADA SEGURO RESIDENCIAL =====================
 function fmtBRL(n){return 'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fmtBRL0(n){return 'R$ '+Number(n||0).toLocaleString('pt-BR',{maximumFractionDigits:0});}
-const RES_STEPS=['dados','perfil','local','elig','modalidade','lmi','vigencia','cobs','quest','franquia','assist','revisao'];
+const RES_STEPS=['dados','perfil','local','elig','modalidade','lmi','vigencia','cobs','quest','assist','revisao'];
 function resSteps(){ return S.authed?RES_STEPS.filter(s=>s!=='dados'):RES_STEPS; }
 function maskCPF(v){v=(v||'').replace(/\D/g,'').slice(0,11);if(v.length>9)return v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');if(v.length>6)return v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');if(v.length>3)return v.replace(/(\d{3})(\d{1,3})/,'$1.$2');return v;}
 function maskTel(v){v=(v||'').replace(/\D/g,'').slice(0,11);if(v.length>10)return v.replace(/(\d{2})(\d{5})(\d{1,4})/,'($1) $2-$3');if(v.length>6)return v.replace(/(\d{2})(\d{4,5})(\d{1,4})/,'($1) $2-$3');if(v.length>2)return v.replace(/(\d{2})(\d{1,5})/,'($1) $2');if(v.length>0)return '('+v;return v;}
@@ -1697,7 +1697,7 @@ function rResid(){
   const steps=resSteps(); const idx=steps.indexOf(step), total=steps.length;
   let body='',title='',sub='',btn='Continuar',nextA='res-next',canNext=true;
   if(step==='dados'){
-    title='Seus dados'; sub='Usamos para emitir a apólice e guardar sua cotação — você pode continuar depois de onde parou.';
+    title='Seus dados'; sub='';
     const fld=(lbl,id,attrs)=>`<div style="background:#fff;border:1.5px solid rgba(0,36,48,.10);border-radius:16px;padding:13px 16px;margin-bottom:12px"><div style="font-size:12px;font-weight:800;color:var(--txt3);margin-bottom:5px">${lbl}</div><input id="${id}" ${attrs} style="width:100%;border:none;outline:none;font-size:18px;font-weight:700;color:var(--txt1);font-family:inherit;background:none"/></div>`;
     body=fld('E-MAIL','res-email',`type="email" inputmode="email" placeholder="voce@email.com" value="${(S.res.email||'').replace(/"/g,'&quot;')}"`)
       +fld('CPF','res-cpf',`type="tel" inputmode="numeric" placeholder="000.000.000-00" value="${S.res.cpf||''}" oninput="this.value=maskCPF(this.value)"`)
@@ -1705,24 +1705,22 @@ function rResid(){
       +`<div style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--txt3);margin-top:4px;line-height:1.5"><div style="flex-shrink:0;margin-top:1px">${ico('lock',13,'#279989')}</div><div>Seus dados são protegidos pela LGPD. Se você criar uma conta com este e-mail, a cotação aparece automaticamente nela.</div></div>`;
   }
   else if(step==='perfil'){
-    title='Sobre o seu imóvel'; sub='Essas informações definem a aceitação e o preço.';
+    title='Sobre o seu imóvel'; sub='';
     body=`<div style="font-size:12px;font-weight:800;color:var(--txt3);margin-bottom:8px">TIPO DE IMÓVEL</div>${RES.tiposImovel.map(o=>_resOpt('tipo',o,r.tipo===o.v)).join('')}
     <div style="font-size:12px;font-weight:800;color:var(--txt3);margin:16px 0 8px">OCUPAÇÃO</div>${RES.ocupacoes.map(o=>_resOpt('ocup',o,r.ocup===o.v)).join('')}
     <div style="font-size:12px;font-weight:800;color:var(--txt3);margin:16px 0 8px">SEU PERFIL</div>${RES.perfis.map(o=>_resOpt('perfil',o,r.perfil===o.v)).join('')}`;
     canNext=!!(r.tipo&&r.ocup&&r.perfil);
   } else if(step==='local'){
-    title='Onde fica o imóvel?'; sub='O CEP define a aceitação regional e a tarifa da sua região.';
+    title='Onde fica o imóvel?'; sub='';
     body=`<div style="background:#fff;border:1.5px solid rgba(0,36,48,.10);border-radius:16px;padding:16px 18px">
       <div style="font-size:12px;font-weight:800;color:var(--txt3);margin-bottom:8px">CEP DO IMÓVEL</div>
       <input id="res-cep" inputmode="numeric" maxlength="9" value="${r.cep||''}" placeholder="00000-000" style="width:100%;border:none;outline:none;font-size:22px;font-weight:700;color:var(--txt1);font-family:inherit;background:none"/>
-    </div>
-    <div style="font-size:12px;color:var(--txt3);margin-top:12px;line-height:1.5">Não cobrimos imóveis em zona rural ou em áreas de risco agravado, conforme a matriz de subscrição.</div>`;
+    </div>`;
   } else if(step==='elig'){
-    title='Confirmação de elegibilidade'; sub='Algumas situações não são aceitas pelo produto. Responda com sinceridade.';
+    title='Confirmação de elegibilidade'; sub='';
     body=RES.elegibilidade.map(q=>`<div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:15px 16px;margin-bottom:12px">
       <div style="font-size:14.5px;font-weight:700;color:var(--txt1);line-height:1.35">${q.q}</div>
-      <div style="font-size:12px;color:var(--txt2);margin-top:4px;line-height:1.4">${q.s}</div>
-      <div style="display:flex;gap:10px;margin-top:10px">
+      <div style="display:flex;gap:10px;margin-top:12px">
         <button data-a="res-elig" data-k="${q.k}" data-v="sim" style="flex:1;background:${r.elig[q.k]==='sim'?'#46EF80':'#fff'};color:${r.elig[q.k]==='sim'?'#002430':'var(--txt1)'};border:1.5px solid ${r.elig[q.k]==='sim'?'#46EF80':'rgba(0,36,48,.12)'};border-radius:12px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Sim</button>
         <button data-a="res-elig" data-k="${q.k}" data-v="nao" style="flex:1;background:${r.elig[q.k]==='nao'?'#E5484D':'#fff'};color:${r.elig[q.k]==='nao'?'#fff':'var(--txt1)'};border:1.5px solid ${r.elig[q.k]==='nao'?'#E5484D':'rgba(0,36,48,.12)'};border-radius:12px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Não</button>
       </div></div>`).join('');
@@ -1730,7 +1728,7 @@ function rResid(){
     title='O que você quer proteger?'; sub='Modalidade de contratação do seguro.';
     body=RES.modalidades.map(o=>_resOpt('modalidade',o,r.modalidade===o.v)).join('');
   } else if(step==='lmi'){
-    title='Limite de indenização (LMI)'; sub='Valor máximo que a seguradora paga, no regime de Primeiro Risco Absoluto (sem rateio).';
+    title='Limite de indenização (LMI)'; sub='';
     const presets=[50000,100000,250000,500000,1000000];
     body=`<div style="background:var(--navy);border-radius:20px;padding:22px;text-align:center;margin-bottom:16px">
       <div style="font-size:12px;color:rgba(255,255,255,.5);font-weight:600;margin-bottom:6px">VALOR SEGURADO</div>
@@ -1739,13 +1737,12 @@ function rResid(){
         <button data-a="res-lmi" data-d="-10000" style="width:46px;height:46px;border-radius:14px;border:none;background:rgba(255,255,255,.12);color:#fff;font-size:24px;font-weight:700;cursor:pointer">–</button>
         <button data-a="res-lmi" data-d="10000" style="width:46px;height:46px;border-radius:14px;border:none;background:rgba(70,239,128,.2);color:#46EF80;font-size:24px;font-weight:700;cursor:pointer">+</button>
       </div></div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px">${presets.map(v=>`<button data-a="res-lmi" data-v="${v}" style="flex:1;min-width:30%;background:${r.lmi===v?'#279989':'#fff'};color:${r.lmi===v?'#fff':'var(--txt1)'};border:1.5px solid ${r.lmi===v?'#279989':'rgba(0,36,48,.12)'};border-radius:12px;padding:11px 6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">${v>=1000000?'R$ 1 mi':'R$ '+(v/1000)+' mil'}</button>`).join('')}</div>
-    <div style="font-size:12px;color:var(--txt3);margin-top:14px">Faixa do produto: ${fmtBRL0(RES.lmi.min)} a ${fmtBRL0(RES.lmi.max)} (Fase 1).</div>`;
+    <div style="display:flex;flex-wrap:wrap;gap:8px">${presets.map(v=>`<button data-a="res-lmi" data-v="${v}" style="flex:1;min-width:30%;background:${r.lmi===v?'#279989':'#fff'};color:${r.lmi===v?'#fff':'var(--txt1)'};border:1.5px solid ${r.lmi===v?'#279989':'rgba(0,36,48,.12)'};border-radius:12px;padding:11px 6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">${v>=1000000?'R$ 1 mi':'R$ '+(v/1000)+' mil'}</button>`).join('')}</div>`;
   } else if(step==='vigencia'){
-    title='Por quanto tempo?'; sub='Vigência da apólice. Prazos maiores têm incentivo comercial.';
+    title='Por quanto tempo?'; sub='';
     body=RES.vigencias.map(o=>_resOpt('vig',o,r.vig===o.v)).join('');
   } else if(step==='cobs'){
-    title='Coberturas'; sub='A básica é obrigatória. Escolha as adicionais que quiser.';
+    title='Coberturas'; sub='';
     body=`<div style="background:#eaf6f1;border:1.5px solid #279989;border-radius:14px;padding:13px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start">
       <div style="flex:1"><div style="font-size:14px;font-weight:800;color:var(--txt1)">${RES.basica.nome} <span style="font-size:10px;color:#279989;font-weight:800">· INCLUSA</span></div>
       <div style="font-size:12px;color:var(--txt2);margin-top:3px;line-height:1.4">${RES.basica.desc}</div></div>
@@ -1755,13 +1752,11 @@ function rResid(){
       body+=`<div style="font-size:12px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 8px">${g}</div>`+items.map(c=>_resCov(c,!!r.cobs[c.id])).join('');
     });
   } else if(step==='quest'){
-    title='Questionário de risco'; sub='Suas respostas ajustam o preço de forma transparente.';
+    title='Questionário de risco'; sub='';
     body=`<div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:15px 16px;margin-bottom:12px">
-      <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">O imóvel possui sistema de energia solar?</div>
-      <div style="font-size:12px;color:var(--txt2);margin-top:3px">Ajuda a dimensionar a cobertura de Danos Elétricos para o sistema.</div>${_resYN('solar',r.quest.solar)}</div>
+      <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">O imóvel possui sistema de energia solar?</div>${_resYN('solar',r.quest.solar)}</div>
     <div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:15px 16px;margin-bottom:12px">
-      <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">O imóvel já teve sinistros anteriores?</div>
-      <div style="font-size:12px;color:var(--txt2);margin-top:3px">Seu histórico ajuda a personalizar o preço.</div>${_resYN('sin',r.quest.sin)}</div>
+      <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">O imóvel já teve sinistros anteriores?</div>${_resYN('sin',r.quest.sin)}</div>
     <div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:15px 16px">
       <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">Proteções contra roubo</div>
       <div style="font-size:12px;color:var(--txt2);margin:3px 0 10px">Selecione os itens de segurança que o imóvel possui — podem reduzir o seu preço.</div>
