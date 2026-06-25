@@ -93,7 +93,7 @@ body{background:#0e1e27;font-family:'Cera Pro','Helvetica Neue',Helvetica,Arial,
 .step-dot.cur{background:var(--neon);flex:2.5}
 
 /* ── BUTTONS ── */
-.btn{width:100%;height:56px;border-radius:16px;border:none;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.02em;transition:transform .12s,box-shadow .12s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn{width:100%;height:56px;border-radius:16px;border:none;font-size:16.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.01em;transition:transform .12s,box-shadow .12s;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn:active{transform:scale(.965)}
 .btn:disabled{opacity:.25;cursor:not-allowed;transform:none!important}
 .btn-neon{background:var(--neon);color:var(--navy);box-shadow:0 4px 20px rgba(70,239,128,.3)}
@@ -559,7 +559,7 @@ async function fetchProfile(){
   const u=await currentUser(); if(!u)return null;
   return Object.assign({}, u.user_metadata||{});
 }
-function applyProfile(p){ if(!p)return; S.profile=p; if(p.nome)S.form.name=p.nome; if(p.cpf)S.form.cpf=p.cpf; }
+function applyProfile(p){ if(!p)return; S.profile=p; if(p.nome)S.form.name=p.nome; if(p.cpf)S.form.cpf=p.cpf; if(p.telefone&&!S.form.wa)S.form.wa=p.telefone; if(p.nascimento&&!S.form.nascimento)S.form.nascimento=p.nascimento; }
 async function saveProfile(fields){
   if(!SB)return{error:{message:'failed to fetch'}};
   try{
@@ -1154,12 +1154,11 @@ function rPayError(){
 // CATEGORIES
 function rCats(){
   const cards=CATS.map((c,idx)=>{
-    const isGreen=c.color==='#46EF80';
-    const rgb=isGreen?'70,239,128':'39,153,137';
+    const rgb='70,239,128'; // padroniza tudo no verde neon da marca
     return`<div data-cid="${c.id}" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:20px 18px;cursor:pointer;position:relative;overflow:hidden;transition:transform .14s,border-color .14s;animation:fadeUp .4s ease ${idx*.06}s both" ontouchstart="this.style.transform='scale(.96)';this.style.borderColor='rgba(${rgb},.4)'" ontouchend="this.style.transform='';this.style.borderColor='rgba(255,255,255,.07)'" onmousedown="this.style.transform='scale(.96)'" onmouseup="this.style.transform=''">
       <div style="position:absolute;bottom:-18px;right:-18px;width:72px;height:72px;border-radius:50%;background:rgba(${rgb},.07);pointer-events:none"></div>
       <div style="width:46px;height:46px;border-radius:14px;background:rgba(${rgb},.1);display:flex;align-items:center;justify-content:center;margin-bottom:14px;border:1px solid rgba(${rgb},.18)">
-        ${ico(c.icon,23,c.color)}
+        ${ico(c.icon,23,'#46EF80')}
       </div>
       <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:5px;line-height:1.2;letter-spacing:-.01em">${c.name}</div>
       <div style="font-size:11.5px;color:rgba(255,255,255,.38);margin-bottom:16px;line-height:1.5;font-weight:400">${c.sub}</div>
@@ -1619,7 +1618,7 @@ ${sb(false)}
     </div>
     <div style="font-size:18px;font-weight:800;color:var(--txt1);line-height:1.4;margin-bottom:6px">Indique amigos que<br>você confia e <span style="color:#46EF80">ganhe meses de graça.</span></div>
     <div style="font-size:14px;color:var(--txt2);margin-bottom:16px;line-height:1.6">Para cada amigo que contratar um seguro pelo seu link, você ganha 1 mês gratuito no seu plano.</div>
-    <button class="btn btn-neon" data-a="copy-link" style="font-size:14px">Copiar meu link de indicação</button>
+    <button class="btn btn-neon" data-a="copy-link" style="font-size:15px">Copiar meu link de indicação</button>
     <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--teal);font-weight:700;cursor:pointer" data-a="how-ref">Veja como funciona →</div>
   </div>
 
@@ -2023,7 +2022,7 @@ function rHome(){
   </div>
 </div>
 <div class="scrl" style="padding:22px 18px 100px">
-  <button class="btn btn-neon" data-a="go-cats" style="height:52px;font-size:14px;margin-bottom:22px">+ Contratar novo seguro</button>
+  <button class="btn btn-neon" data-a="go-cats" style="height:52px;margin-bottom:22px">+ Contratar novo seguro</button>
   ${pendingQuotesHTML()}
   <div style="margin-bottom:14px">
     <div style="font-size:17px;font-weight:800;color:var(--txt1);letter-spacing:-.02em">Minhas apólices</div>
@@ -2099,19 +2098,35 @@ function startLoad(){
   setTimeout(()=>nav('result'),2800);
 }
 
+// Campos pessoais reaproveitáveis: se o usuário está logado e já temos o dado, pulamos o passo
+const REUSABLE_FIELDS=['cpf','wa','nascimento'];
+function _personalVal(key){
+  if(!S.authed)return '';
+  const p=S.profile||{};
+  if(key==='cpf')return p.cpf||S.userCpf||S.form.cpf||'';
+  if(key==='wa')return p.telefone||S.userPhone||S.form.wa||'';
+  if(key==='nascimento')return p.nascimento||S.form.nascimento||'';
+  return '';
+}
+function _canSkip(key){ return REUSABLE_FIELDS.indexOf(key)>=0 && !!_personalVal(key); }
+function _seedPersonal(){ REUSABLE_FIELDS.forEach(k=>{ const v=_personalVal(k); if(v)S.form[k]=v; }); }
+function formGoStep(idx){
+  const flow=gFlow();
+  while(idx<flow.length && _canSkip(flow[idx])){ S.form[flow[idx]]=_personalVal(flow[idx]); idx++; }
+  if(idx<flow.length){ S.step=idx; nav('f-'+flow[idx]); }
+  else { S.step=0; nav('loading'); }
+}
 function formNextStep(sk){
   const flow=gFlow();
   const idx=flow.indexOf(sk);
-  S.step=idx+1;
-  if(S.step<flow.length)nav('f-'+flow[S.step]);
-  else{S.step=0;nav('loading');}
+  formGoStep(idx+1);
 }
-
 function formBack(){
   const flow=gFlow();
-  S.step--;
-  if(S.step<0){S.step=0;nav('prods-'+S.cat);}
-  else nav('f-'+flow[S.step]);
+  let i=S.step-1;
+  while(i>=0 && _canSkip(flow[i])) i--;
+  if(i<0){ S.step=0; nav('prods-'+S.cat); }
+  else { S.step=i; nav('f-'+flow[i]); }
 }
 
 // ===================== EVENT BINDING =====================
@@ -2542,9 +2557,9 @@ function bind(el){
 
   // Product cards
   el.querySelectorAll('[data-pid]').forEach(c=>c.addEventListener('click',()=>{
-    S.prod=c.dataset.pid;S.step=0;S.form={};S._activatingTs=null;
-    const flow=gFlow();
-    nav('f-'+flow[0]);
+    S.prod=c.dataset.pid;S.form={};S._activatingTs=null;
+    _seedPersonal();
+    formGoStep(0);
   }));
 
   // Payment method
