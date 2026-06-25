@@ -402,12 +402,17 @@ function _pendCard(q){
       <div style="font-size:13px;color:#9a6a16;margin-top:2px">Esta cotação é válida até ${s.validade||'—'}.</div>
     </div>
     <div style="padding:16px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-        <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(232,163,61,.12);border-radius:20px;padding:5px 11px;margin-bottom:12px">
-          <span style="width:8px;height:8px;border-radius:50%;background:#E8A33D;display:inline-block"></span>
-          <span style="font-size:11px;font-weight:800;letter-spacing:.04em;color:#9a6a16">ATIVAÇÃO PENDENTE</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(70,239,128,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(icon,22,'#1f9e74')}</div>
+          <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(232,163,61,.12);border-radius:20px;padding:5px 11px">
+            <span style="width:8px;height:8px;border-radius:50%;background:#E8A33D;display:inline-block"></span>
+            <span style="font-size:11px;font-weight:800;letter-spacing:.04em;color:#9a6a16">ATIVAÇÃO PENDENTE</span>
+          </div>
         </div>
-        <div style="width:42px;height:42px;border-radius:12px;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(icon,22,'#002430')}</div>
+        <button data-a="fechar-cotacao" data-q="${q.ts}" aria-label="Fechar cotação" style="width:34px;height:34px;border-radius:10px;border:none;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;padding:0;font-family:inherit">
+          <svg viewBox="0 0 24 24" fill="none" style="width:17px;height:17px"><line x1="18" y1="6" x2="6" y2="18" stroke="#6b7785" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#6b7785" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
       </div>
       <div style="font-size:13px;color:var(--txt2);font-weight:600">${s.type||'Seguro'}</div>
       <div style="font-size:20px;font-weight:800;color:var(--txt1);margin:2px 0 16px;letter-spacing:-.02em">${escapeHtml(s.item||'—')}</div>
@@ -3124,6 +3129,7 @@ function bind(el){
     else if(a==='suc-entrar'){ nav('login'); try{const e=document.querySelector('#login-email'); if(e&&S.form.email)e.value=S.form.email;}catch(_e){} }
     else if(a==='ativar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; if(PRODS[q.prod]&&PRODS[q.prod].resid){ if(q.snap&&q.snap.res){S.res=Object.assign({},q.snap.res);}else{resInit();} const qp=resPremio(); PRODS.casa.price={m:fmtBRL(qp.mensal),a:fmtBRL(qp.mensal),at:fmtBRL(qp.anual),badge:'Estimativa',cov:fmtBRL0(S.res.lmi)}; nav('payment'); } else nav('payment'); } }
     else if(a==='alterar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; if(PRODS[q.prod]&&PRODS[q.prod].resid){ if(q.snap&&q.snap.res){S.res=Object.assign({},q.snap.res);}else{resInit();} S.res.step='revisao'; nav('resid'); } else nav('result'); } }
+    else if(a==='fechar-cotacao'){ removePendingQuote(b.dataset.q); toast('Cotação removida'); goTo('home',rHome()); }
     else if(a==='sel-cat'||a==='noop'){}
     else if(a==='form-back')formBack();
     else if(a==='cancel'){S.step=0;nav(S.cat?'prods-'+S.cat:'cats');}
