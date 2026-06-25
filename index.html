@@ -443,11 +443,7 @@ const CHAT_KB=[
   {k:['seguro de celular','seguro celular','celular','smartphone','iphone','meu telefone','tela quebrada','tela trincada','quebrei o celular'],
    a:'O Seguro Celular cobre roubo, furto, quebra de tela e vidro, danos elétricos e por líquido, sem franquia e com cobertura internacional. A partir de R$ 47,90/mês.',act:[{label:'Cotar Celular',nav:'cats'}],topic:'celular'},
   {k:['seguro casa','seguro residencial','residencial','minha casa','seguro do imovel','incendio em casa','seguro da casa'],
-   a:'O Casa Protegida+ cobre incêndio, roubo/furto de bens, danos elétricos e mais, com assistência residencial. A partir de R$ 49,90/mês, com o 1º mês grátis.',act:[{label:'Cotar Casa',nav:'cats'}],topic:'casa'},
-  {k:['fianca','fiador','seguro fianca','alugar sem fiador','aluguel','locacao','seguro aluguel'],
-   a:'A Fiança 360 substitui o fiador e o depósito caução na hora de alugar, com aprovação em até 24h. A partir de R$ 89,90/mês.',act:[{label:'Cotar Fiança',nav:'cats'}],topic:'casa'},
-  {k:['condominio','sindico','seguro do predio','seguro condominio'],
-   a:'O Condomínio Protegido oferece cobertura coletiva para a edificação e áreas comuns. A partir de R$ 299,00/mês.',act:[{label:'Cotar Condomínio',nav:'cats'}],topic:'casa'},
+   a:'O Seguro Residencial Você+Seguro protege sua casa com a cobertura básica (incêndio, raio, explosão, fumaça e queda de aeronave) e até 21 coberturas adicionais, além de assistências e seguro pet opcional. O limite de indenização vai de R$ 50 mil a R$ 1 milhão, no regime de Primeiro Risco Absoluto (sem rateio).',act:[{label:'Cotar Residencial',nav:'cats'}],topic:'casa'},
   {k:['seguro de vida','seguro vida','morte','falecimento','protecao para familia','protecao familiar'],
    a:'O Vida Ativa+ paga indenização aos beneficiários em caso de morte ou invalidez, com até R$ 500.000 de cobertura, a partir de R$ 29,90/mês (3 meses grátis). Para empresas, temos o Vida Coletivo.',act:[{label:'Cotar Vida',nav:'cats'}],topic:'vida'},
   {k:['acidentes pessoais','acidente pessoal','invalidez','seguro acidente'],
@@ -497,7 +493,7 @@ const CHAT_KB=[
   {k:['contratar','cotar','cotacao','fazer seguro','quero um seguro','quero contratar','simular','simulacao'],
    a:'É rápido: toque em "Fazer cotação", escolha a categoria e o produto, responda algumas perguntas e veja o preço na hora — sem compromisso.',act:[{label:'Fazer cotação',nav:'cats'}],topic:'contratar'},
   {k:['tipos','quais seguro','quais sao os seguros','produtos','o que voces oferecem','o que voces tem','catalogo','lista de seguros'],
-   a:'Temos 13 seguros em 4 áreas: Moradia (Casa, Fiança e Condomínio), Proteção Familiar (Vida, Acidentes Pessoais e Prestamista), Proteção Financeira+ (Cartão, PIX, Bolsa e Garantia Estendida) e Mobilidade (Automóvel e Celular).',act:[{label:'Ver todos',nav:'cats'}],topic:'tipos'},
+   a:'Temos 11 seguros em 4 áreas: Moradia (Seguro Residencial), Proteção Familiar (Vida, Acidentes Pessoais e Prestamista), Proteção Financeira+ (Cartão, PIX, Bolsa e Garantia Estendida) e Mobilidade (Automóvel e Celular).',act:[{label:'Ver todos',nav:'cats'}],topic:'tipos'},
   {k:['preco','valor','quanto custa','quanto fica','quanto e','mensalidade','quanto vou pagar','quanto sai'],
    a:'O preço depende do produto e do seu perfil. Nossos planos começam bem baixos (o Pix Protegido sai por R$ 9,90/mês, por exemplo). O melhor é fazer uma cotação rápida — leva menos de 1 minuto e sem compromisso.',act:[{label:'Fazer cotação',nav:'cats'}],topic:'preco'},
   {k:['documento','documentos','rg','cnh','o que preciso','preciso de que','quais documentos'],
@@ -544,7 +540,7 @@ function chipsFor(topic){
     apolices:['Como abrir um sinistro?','Como cancelar?','Formas de pagamento'],
     auto:['O que cobre o Auto?','Tem assistência 24h?','Quanto custa?'],
     celular:['O que cobre o Celular?','Tem cobertura internacional?','Tem franquia?'],
-    casa:['O que cobre a Casa?','Como funciona a Fiança?','Quanto custa?'],
+    casa:['O que cobre o Residencial?','Como funciona a franquia?','Quanto custa?'],
     vida:['Quem é o beneficiário?','O que é carência?','Quanto custa?'],
     cartao:['O que cobre o Cartão?','E o Pix Protegido?','Quanto custa?'],
     pix:['Como funciona o reembolso?','O que cobre o Cartão?','Quanto custa?'],
@@ -629,19 +625,15 @@ check:`<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill=
 const T=()=>{const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')};
 
 const CATS=[
-  {id:'moradia', name:'Moradia',icon:'house',color:'#46EF80',sub:'Casa, fiança e condomínio',prods:['casa','fianca','condo']},
+  {id:'moradia', name:'Moradia',icon:'house',color:'#46EF80',sub:'Seguro Residencial completo',prods:['casa']},
   {id:'familiar',name:'Proteção Familiar',icon:'family',color:'#279989',sub:'Vida, acidentes e prestamista',prods:['vidacoletivo','vidaativa','acidentes','prestamista']},
   {id:'financeiro',name:'Proteção Financeira+',icon:'credit',color:'#46EF80',sub:'Cartão, PIX, bolsa e garantia',prods:['cartao','pix','bolsa','garantia']},
   {id:'mobilidade',name:'Mobilidade',icon:'car',color:'#279989',sub:'Automóvel e celular',prods:['auto','celular']},
 ];
 
 const PRODS={
-  casa:{name:'Casa Protegida+',cat:'moradia',icon:'house',sub:'Proteção total para sua residência',
+  casa:{name:'Seguro Residencial',cat:'moradia',icon:'house',sub:'Proteção completa para sua casa',resid:true,
     flow:['tipo_imovel','cep_resid','condicao','valor_bens','cpf','wa'],price:{m:'R$ 49,90',a:'R$ 34,90',at:'R$ 418,80',badge:'Primeiro mês grátis',cov:'R$ 50.000,00'}},
-  fianca:{name:'Fiança 360',cat:'moradia',icon:'key',sub:'Garantia de aluguel sem fiador',
-    flow:['cpf','cep_aluguel','valor_aluguel','prazo_contrato','wa'],price:{m:'R$ 89,90',a:'R$ 62,90',at:'R$ 754,80',badge:'Aprovação em 24h',cov:'30x o aluguel'}},
-  condo:{name:'Condomínio Protegido',cat:'moradia',icon:'building',sub:'Proteção completa para condomínios',
-    flow:['cep_condo','n_unidades','tipo_cond','wa'],price:{m:'R$ 299,00',a:'R$ 209,30',at:'R$ 2.511,60',badge:'Cobertura coletiva',cov:'R$ 500.000,00'}},
   vidacoletivo:{name:'Vida Coletivo',cat:'familiar',icon:'family',sub:'Proteção da equipe da sua empresa',
     flow:['cnpj','n_func','faixa_etaria','wa'],price:{m:'R$ 12,00',a:'R$ 8,40',at:'R$ 100,80',badge:'Por funcionário/mês',cov:'R$ 50.000,00/vida'}},
   vidaativa:{name:'Vida Ativa+',cat:'familiar',icon:'heart',sub:'Seguro de vida individual completo',
@@ -666,8 +658,6 @@ const PRODS={
 
 const COVS={
   casa:['Incêndio, raio e explosão','Roubo e furto de móveis e eletrodomésticos','Danos elétricos','Vendaval e granizo','Responsabilidade civil familiar','Assistência 24h para emergências'],
-  fianca:['Cobertura de aluguel em caso de inadimplência','Multa por quebra de contrato','Danos ao imóvel','IPTU e condomínio em atraso','Pintura e reparos ao devolver','Honorários advocatícios'],
-  condo:['Incêndio nas áreas comuns','Responsabilidade civil do condomínio','Equipamentos e maquinários','Acidentes com funcionários','Danos à estrutura','RC dos condôminos'],
   vidacoletivo:['Morte natural e acidental para todos','Invalidez permanente (IPA e IPP)','DIT — diária por incapacidade','Doenças graves','Assistência funeral','Repatriação'],
   vidaativa:['Morte natural e acidental','Invalidez permanente total ou parcial','Doenças graves (infarto, AVC, câncer)','Assistência funeral para a família','Renda mensal por invalidez','Sem carência para acidentes'],
   acidentes:['Morte por acidente','Invalidez permanente total por acidente','Invalidez permanente parcial','DIT — diária por incapacidade','Despesas médicas e hospitalares','Sem carência'],
@@ -680,6 +670,62 @@ const COVS={
   garantia:['Defeitos de fabricação pós-garantia','Danos elétricos e por mau uso','Assistência técnica autorizada','Cobertura de peças e mão de obra','Sem franquia','Prazo de até 24 meses extra'],
 };
 
+// ===== SEGURO RESIDENCIAL — regras do documento oficial (fonte: producao/seguro-residencial-spec.js) =====
+// Valores tarifários são ILUSTRATIVOS (a taxa real vem do estudo atuarial). Tudo aqui é só do Residencial.
+const RES={
+  lmi:{min:50000,max:1000000,step:10000,default:100000},
+  vigencias:[{v:12,n:'12 meses',fator:1.00},{v:24,n:'24 meses',fator:0.97,sel:'−3%'},{v:36,n:'36 meses',fator:0.95,sel:'−5%'}],
+  tiposImovel:[{v:'apto',n:'Apartamento',s:'Uso habitual',ico:'building'},{v:'casa',n:'Casa',s:'Uso habitual',ico:'house'},{v:'casa_cond',n:'Casa em condomínio',s:'Condomínio fechado',ico:'house'}],
+  ocupacoes:[{v:'habitual',n:'Habitual',s:'Moradia o ano todo',ico:'house'},{v:'veraneio',n:'Veraneio',s:'Uso em temporadas',ico:'sun'}],
+  perfis:[{v:'prop_morador',n:'Proprietário morador',s:'Imóvel próprio onde moro',ico:'key'},{v:'prop_locador',n:'Proprietário locador',s:'Imóvel meu, alugado a terceiros',ico:'doc'},{v:'inquilino',n:'Inquilino',s:'Moro de aluguel',ico:'family'}],
+  // Triagem de elegibilidade (respostas "sim" = recusa, conforme documento)
+  elegibilidade:[
+    {k:'compart',q:'O imóvel é de uso coletivo ou compartilhado?',s:'Pensão, alojamento, pousada, cortiço, asilo, co-living, república, ocupação rotativa.'},
+    {k:'construcao',q:'A construção é palafita, flutuante ou tem mais de 25% em madeira?',s:'Restrição construtiva do produto.'},
+    {k:'rural',q:'O imóvel fica em zona rural ou é isolado sem acesso regular?',s:'Restrição de localização do produto.'},
+  ],
+  modalidades:[{v:'predio_conteudo',n:'Prédio + Conteúdo',s:'Estrutura e bens (recomendado)',rec:true},{v:'predio',n:'Prédio',s:'Somente a estrutura'},{v:'conteudo',n:'Conteúdo',s:'Somente os bens'}],
+  // Cobertura básica (obrigatória) + 21 adicionais. txa = taxa anual ILUSTRATIVA sobre o LMI.
+  basica:{id:1,nome:'Cobertura Básica',grupo:'Danos Materiais',txa:0.0025,
+    desc:'Incêndio, queda de raio, explosão, fumaça e queda de aeronaves.',obrig:true},
+  adicionais:[
+    {id:2,nome:'Vendaval, Granizo, Furacão e Tornado',grupo:'Eventos da Natureza',txa:0.0008,fr:'Vendaval, Furacão, Ciclone, Tornado e Granizo',desc:'Vento ≥54 km/h, granizo, furacão e tornado. Cobre prédio, conteúdo e energia solar.'},
+    {id:3,nome:'Danos Elétricos',grupo:'Patrimonial',txa:0.0007,fr:'Danos Elétricos',solar:true,desc:'Curto-circuito, sobretensão, descargas. Eletrodomésticos, eletrônicos, automação, solar e wallbox.'},
+    {id:4,nome:'Alagamento e Inundação',grupo:'Eventos da Natureza',txa:0.0009,fr:'Alagamento e Inundação',desc:'Entrada de água por enchente, transbordamento e chuvas.'},
+    {id:5,nome:'Ruptura de Tanques e Tubulações',grupo:'Água',txa:0.0006,fr:'Ruptura de Tanques e Tubulações',desc:'Vazamentos da rede interna de água e esgoto.'},
+    {id:6,nome:'Excesso de Conta de Água',grupo:'Água',txa:0.0003,sub:true,desc:'Reembolsa o excedente da conta por vazamento coberto.'},
+    {id:7,nome:'Quebra de Vidros, Espelhos, Mármores e Granitos',grupo:'Patrimonial',txa:0.0005,fr:'Quebra de Vidros, Espelhos, Mármores e Granitos',sub:true,desc:'Vidros, box, louças, cooktop, mármores e granitos fixos.'},
+    {id:8,nome:'Impacto de Veículos',grupo:'Patrimonial',txa:0.0004,fr:'Impacto de Veículo',desc:'Colisão de veículos de terceiros à edificação e conteúdo.'},
+    {id:9,nome:'Roubo e Subtração de Bens com Arrombamento',grupo:'Roubo',txa:0.0010,sub:true,roubo:true,desc:'Roubo e subtração mediante arrombamento, com danos ao imóvel.'},
+    {id:10,nome:'Roubo/Furto Qualificado de Bicicletas',grupo:'Roubo',txa:0.0004,sub:true,desc:'Bicicletas (inclui elétricas até 1000 W) por furto qualificado, roubo ou acidente.'},
+    {id:11,nome:'Responsabilidade Civil Familiar',grupo:'Responsabilidade Civil',txa:0.0004,desc:'Danos materiais/corporais a terceiros pelo segurado, família, empregado ou animais.'},
+    {id:12,nome:'Responsabilidade Civil — Danos Morais',grupo:'Responsabilidade Civil',txa:0.0003,desc:'Danos morais decorrentes de danos a terceiros indenizados na RC Familiar.'},
+    {id:13,nome:'Responsabilidade Civil — Empregador Doméstico',grupo:'Responsabilidade Civil',txa:0.0003,desc:'RC por morte ou invalidez do empregado doméstico em serviço.'},
+    {id:14,nome:'Despesas Extraordinárias',grupo:'Despesas',txa:0.0002,sub:true,desc:'Indeniza 10% do valor das indenizações por danos materiais.'},
+    {id:15,nome:'Recomposição de Registros e Documentos',grupo:'Despesas',txa:0.0002,desc:'Refazer documentos pessoais destruídos por incêndio, raio, explosão ou fumaça.'},
+    {id:16,nome:'Despesas de Salvamento / Contenção',grupo:'Despesas',txa:0.0002,desc:'Até 10% do LMI da cobertura afetada para evitar/minorar o sinistro (não compõe o LMI).'},
+    {id:17,nome:'Despesas com Aluguel',grupo:'Despesas',txa:0.0005,sub:true,desc:'Aluguel enquanto o imóvel fica inabitável (até 6 meses). Inclui situação de violência doméstica.'},
+    {id:18,nome:'Desmoronamento',grupo:'Patrimonial',txa:0.0006,desc:'Desabamento súbito de parede, coluna, viga ou laje.'},
+    {id:19,nome:'Atividades Profissionais',grupo:'Patrimonial',txa:0.0005,sub:true,desc:'Equipamentos e mercadoria da atividade exercida em casa (lista de atividades permitidas).'},
+    {id:20,nome:'Vida Individual (Morte)',grupo:'Pessoas',txa:0.0006,desc:'Capital ao beneficiário por morte natural ou acidental do segurado principal.'},
+    {id:21,nome:'Reembolso de Funeral Familiar',grupo:'Pessoas',txa:0.0004,sub:true,desc:'Funeral do segurado e familiares (até 5 pessoas).'},
+  ],
+  franquiaReferencia:{'Danos Elétricos':{pct:10,min:700},'Ruptura de Tanques e Tubulações':{pct:15,min:500},'Quebra de Vidros, Espelhos, Mármores e Granitos':{pct:10,min:150},'Vendaval, Furacão, Ciclone, Tornado e Granizo':{pct:10,min:600},'Impacto de Veículo':{pct:10,min:300},'Alagamento e Inundação':{pct:15,min:1000}},
+  franquiaTipos:[{v:'isenta',n:'Isenta',s:'Sem participação no sinistro',fator:1.10},{v:'reduzida',n:'Reduzida',s:'50% da franquia padrão',fator:1.05},{v:'padrao',n:'Padrão',s:'Franquia base do produto',fator:1.00,rec:true},{v:'agravada',n:'Agravada',s:'150% da padrão (mais barato)',fator:0.95}],
+  questionario:{solarCoef:1.05,sinistroCoef:1.10,protecoes:['Grades e portões','Alarme','Monitoramento','CFTV','Portaria 24h','Controle de acesso','Fechadura digital','Vigilância']},
+  assist:[{v:'essencial',n:'Essencial',preco:9.90,servicos:['Chaveiro','Encanador','Eletricista','Desentupimento','Vidraceiro','Help desk']},
+    {v:'protecao',n:'Proteção',preco:16.90,servicos:['Tudo do Essencial','Linha branca e marrom','Instalação de luminárias/tomadas','Olho mágico','Serviços gerais','Verificação de vazamentos']},
+    {v:'conforto',n:'Conforto+',preco:24.90,servicos:['Tudo do Proteção','Limpeza de ar-condicionado','Caçamba','Suporte de TV','Instalação de telas','Descarte inteligente']}],
+  pet:[{v:'',n:'Sem assistência pet',preco:0,servicos:[]},
+    {v:'pet_sossego',n:'Pet Sossego',preco:12.90,servicos:['Telemedicina veterinária','Consulta de urgência','Transporte emergencial','Funeral pet','Hospedagem']},
+    {v:'pet_conforto',n:'Pet Conforto',preco:19.90,servicos:['Tudo do Sossego','Consulta eletiva','Concierge','Orientação de vacinação','Exames laboratoriais']},
+    {v:'pet_total',n:'Pet Total',preco:29.90,servicos:['Tudo do Conforto','Exames de imagem']}],
+  pagamento:{cartao:{parc:12,juros:false},pix:{parc:12,juros:false},boleto:{parc:12,semJurosAte:4}},
+  sorteio:{premio:5000,periodo:'mensal',nome:'Você+Seguro com Sorte'},
+  reintegracao:{max:3,bloqueio:0.80},
+  prazoCurto:[[15,13],[30,20],[45,27],[60,30],[75,37],[90,40],[105,46],[120,50],[135,56],[150,60],[165,66],[180,70],[195,73],[210,75],[225,78],[240,80],[255,83],[270,85],[285,88],[300,90],[315,93],[330,95],[345,98],[365,100]],
+  renovacao:{tipoFator:{nova:1.00,propria:0.95,outra:1.00},bonus:[{n:1,f:0.950},{n:2,f:0.925},{n:3,f:0.900},{n:4,f:0.875},{n:5,f:0.850}]},
+};
 // FORM CONFIG PER STEP KEY
 const FC={
   tipo_imovel:{type:'sel',q:'Qual é o tipo do seu imóvel?',sub:'Selecione a opção que melhor descreve',lbl:'TIPO DE IMÓVEL',opts:[{v:'apartamento',n:'Apartamento',s:'Em condomínio ou edifício',ico:'building'},{v:'casa',n:'Casa',s:'Residência independente',ico:'house'},{v:'kitnet',n:'Kitnet / Studio',s:'Unidade compacta',ico:'house'}]},
@@ -754,7 +800,7 @@ const stepDots=(flow,cur)=>`<div class="step-dots">${flow.map((_,i)=>`<div class
 // SPLASH
 function rOnboarding(){
   const slides=[
-    {icon:'shield',title:'Proteção que cabe no bolso',text:'13 seguros para o que importa — casa, carro, celular, vida e mais, tudo em um só app.'},
+    {icon:'shield',title:'Proteção que cabe no bolso',text:'11 seguros para o que importa — casa, carro, celular, vida e mais, tudo em um só app.'},
     {icon:'bolt',title:'Cotação em 2 minutos',text:'Responda algumas perguntas e veja o preço na hora. Sem burocracia e sem compromisso.'},
     {icon:'lock',title:'Seguro e regulado',text:'Seus dados são protegidos com criptografia de ponta a ponta. Regulada pela SUSEP.'}
   ];
@@ -793,7 +839,7 @@ function rSplash(){
   </div>
   <div id="sp-sheet" style="background:#031620;border-radius:28px 28px 0 0;padding:32px 24px 56px;border-top:1px solid rgba(255,255,255,.05);transform:translateY(110%);transition:transform .7s cubic-bezier(.16,1,.3,1);position:relative;z-index:2;flex-shrink:0">
     <div style="width:32px;height:3px;background:rgba(255,255,255,.12);border-radius:2px;margin:0 auto 28px"></div>
-    <div style="font-size:26px;font-weight:900;color:#fff;line-height:1.25;margin-bottom:10px;letter-spacing:-.4px">13 coberturas.<br>Uma plataforma.</div>
+    <div style="font-size:26px;font-weight:900;color:#fff;line-height:1.25;margin-bottom:10px;letter-spacing:-.4px">11 seguros.<br>Uma plataforma.</div>
     <div style="font-size:14px;color:rgba(255,255,255,.42);margin-bottom:28px;line-height:1.65;font-weight:400">Casa, celular, vida, automóvel, cartão, PIX — 100% online. Cotação em menos de 2 minutos.</div>
     <div style="display:flex;flex-direction:column;gap:10px">
       <button class="btn btn-neon" data-a="go-cats">Fazer uma cotação sem conta</button>
@@ -953,8 +999,152 @@ function rFaceidPrompt(){
 </div>`}
 
 // APÓLICE DETAIL
+function rEndosso(){
+  const r=S.res; const novo=resPremio().mensal; const base=S.endossoBase||novo; const delta=novo-base;
+  const presets=[50000,100000,250000,500000,1000000];
+  let cov='';
+  ['Eventos da Natureza','Água','Patrimonial','Roubo','Responsabilidade Civil','Despesas','Pessoas'].forEach(g=>{
+    const items=RES.adicionais.filter(c=>c.grupo===g); if(!items.length)return;
+    cov+=`<div style="font-size:12px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 8px">${g}</div>`+items.map(c=>_resCov(c,!!r.cobs[c.id])).join('');
+  });
+  const deltaTxt=delta===0?'sem alteração no preço':(delta>0?'+ '+fmtBRL(delta)+'/mês':'− '+fmtBRL(Math.abs(delta))+'/mês');
+  const deltaCol=delta>0?'#E5484D':'#279989';
+  return `<div class="scr" style="background:var(--surf);overflow-y:auto">
+  ${sb(false)}
+  ${nb({back:'go-apolice',d:false,cancel:false,title:'Endosso'})}
+  <div style="padding:4px 24px 0;flex-shrink:0">
+    <div style="font-size:21px;font-weight:800;color:var(--txt1);line-height:1.2">Alterar sua apólice</div>
+    <div style="font-size:13px;color:var(--txt2);margin-top:5px;line-height:1.45">Ajuste o LMI, inclua ou remova coberturas e mude as assistências. O novo valor é recalculado na hora.</div>
+  </div>
+  <div style="padding:14px 24px 8px">
+    <div style="font-size:12px;font-weight:800;color:var(--txt3);margin-bottom:8px">LIMITE MÁXIMO DE INDENIZAÇÃO</div>
+    <div style="background:var(--navy);border-radius:20px;padding:20px;text-align:center;margin-bottom:12px">
+      <div style="font-size:34px;font-weight:800;color:#46EF80;letter-spacing:-1px">${fmtBRL0(r.lmi)}</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+        <button data-a="res-lmi" data-d="${-RES.lmi.step}" style="width:46px;height:46px;border-radius:14px;border:none;background:rgba(255,255,255,.1);color:#fff;font-size:22px;font-weight:700;cursor:pointer">−</button>
+        <button data-a="res-lmi" data-d="${RES.lmi.step}" style="width:46px;height:46px;border-radius:14px;border:none;background:rgba(70,239,128,.2);color:#46EF80;font-size:22px;font-weight:700;cursor:pointer">+</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">${presets.map(v=>`<button data-a="res-lmi" data-v="${v}" style="background:${r.lmi===v?'#46EF80':'#fff'};color:${r.lmi===v?'#002430':'var(--txt1)'};border:1.5px solid ${r.lmi===v?'#46EF80':'rgba(0,36,48,.12)'};border-radius:20px;padding:8px 13px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${fmtBRL0(v)}</button>`).join('')}</div>
+    <div style="font-size:12px;font-weight:800;color:var(--txt3);text-transform:uppercase;margin:18px 0 4px">Cobertura básica</div>
+    <div style="background:#fff;border:1.5px solid rgba(70,239,128,.4);border-radius:14px;padding:13px 14px;margin-bottom:4px;display:flex;gap:11px;align-items:flex-start"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--txt1)">${RES.basica.nome} <span style="font-size:9.5px;color:#279989;font-weight:800">· SEMPRE INCLUSA</span></div><div style="font-size:12px;color:var(--txt2);margin-top:3px">${RES.basica.desc}</div></div>${ico('check',20,'#46EF80')}</div>
+    ${cov}
+    <div style="font-size:12px;font-weight:800;color:var(--txt3);text-transform:uppercase;margin:18px 0 8px">Assistência residencial</div>
+    ${RES.assist.map(o=>_resOpt('assist',{v:o.v,n:o.n,s:'+ '+fmtBRL(o.preco)+'/mês'},r.assist===o.v)).join('')}
+    <div style="font-size:12px;font-weight:800;color:var(--txt3);text-transform:uppercase;margin:14px 0 8px">Assistência pet</div>
+    ${RES.pet.map(o=>_resOpt('pet',{v:o.v,n:o.n,s:o.preco?('+ '+fmtBRL(o.preco)+'/mês'):'Não incluir'},r.pet===o.v)).join('')}
+  </div>
+  <div style="padding:12px 24px 34px;flex-shrink:0">
+    <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--card-sh)">
+      <div><div style="font-size:11px;color:var(--txt3);font-weight:700">NOVO VALOR MENSAL</div><div style="font-size:24px;font-weight:900;color:var(--txt1)">${fmtBRL(novo)}</div></div>
+      <div style="font-size:13px;font-weight:800;color:${deltaCol};text-align:right;max-width:45%">${deltaTxt}</div>
+    </div>
+    <button class="btn btn-neon" data-a="aplicar-endosso">Aplicar endosso</button>
+  </div>
+  </div>`;
+}
+function rCancelarApolice(){
+  const p=S.curPol||{}; const r=p.resid||{};
+  const days=Math.max(1,Math.round((Date.now()-(p.ts||Date.now()))/864e5));
+  let pct=100; for(const par of RES.prazoCurto){ if(days<=par[0]){pct=par[1];break;} }
+  const anual=(r.premio||0)*12; const retido=anual*pct/100;
+  return `<div class="scr" style="background:var(--surf);overflow-y:auto">
+  ${sb(false)}
+  ${nb({back:'go-apolice',d:false,cancel:false,title:'Cancelar apólice'})}
+  <div style="padding:8px 24px 24px">
+    <div style="width:74px;height:74px;border-radius:22px;background:rgba(229,72,77,.1);display:flex;align-items:center;justify-content:center;margin:8px 0 16px">${ico('lock',34,'#E5484D')}</div>
+    <div style="font-size:22px;font-weight:800;color:var(--txt1);margin-bottom:10px">Cancelar sua apólice?</div>
+    <div style="font-size:13.5px;color:var(--txt2);line-height:1.55;margin-bottom:18px">Ao cancelar, sua proteção é encerrada e você deixa de concorrer ao ${RES.sorteio.nome}. O cálculo segue a tabela de <b>Prazo Curto</b> do produto — a seguradora retém um percentual do prêmio conforme o tempo já decorrido.</div>
+    <div style="background:#fff;border-radius:16px;padding:6px 18px;box-shadow:var(--card-sh);margin-bottom:14px">
+      ${[['Tempo de vigência decorrido',days+' dia'+(days>1?'s':'')],['Percentual retido (prazo curto)',pct+'%'],['Prêmio anual de referência',fmtBRL0(anual)],['Valor retido estimado',fmtBRL0(retido)]].map((rw,i,a)=>`<div style="display:flex;justify-content:space-between;padding:12px 0;${i<a.length-1?'border-bottom:1px solid var(--border)':''}"><span style="font-size:13px;color:var(--txt2)">${rw[0]}</span><span style="font-size:13px;font-weight:700;color:var(--txt1)">${rw[1]}</span></div>`).join('')}
+    </div>
+    <div style="font-size:11.5px;color:var(--txt3);line-height:1.5">Valores ilustrativos pela tabela de prazo curto do produto. O cancelamento efetivo e eventual restituição seguem as Condições Gerais.</div>
+  </div>
+  <div style="padding:12px 24px 34px;flex-shrink:0">
+    <button class="btn" data-a="confirmar-cancelamento" style="background:#E5484D;color:#fff;margin-bottom:10px">Confirmar cancelamento</button>
+    <button class="btn" data-a="go-apolice" style="background:#fff;color:var(--txt1);border:1.5px solid var(--border)">Manter minha proteção</button>
+  </div>
+  </div>`;
+}
+function rApoliceResid(p){
+  const r=p.resid||{};
+  const lmi=r.lmi||0, vigM=r.vig||12;
+  const now=new Date(), end=new Date(); end.setMonth(end.getMonth()+vigM);
+  const fmt=d=>d.toLocaleDateString('pt-BR');
+  const polNum='VCE-'+String(p.ts||Date.now()).slice(-8);
+  const holder=(S.profile&&(S.profile.nome||S.profile.name||S.profile.full_name))||(S.form&&S.form.nome)||'Segurado(a)';
+  const modN=((RES.modalidades.find(m=>m.v===r.modalidade)||{}).n)||'Prédio + Conteúdo';
+  const frN=((RES.franquiaTipos.find(f=>f.v===r.franquia)||{}).n)||'Padrão';
+  const as=RES.assist.find(a=>a.v===r.assist);
+  const pt=RES.pet.find(x=>x.v===r.pet);
+  const covIds=Array.isArray(r.cobs)?r.cobs:[];
+  const selCov=RES.adicionais.filter(c=>covIds.indexOf(c.id)>=0);
+  const reintUsadas=r.reint||0, reintRest=Math.max(0,RES.reintegracao.max-reintUsadas);
+  const pay=p.pagamento||'—';
+  const bonusF=(RES.renovacao.bonus[0]||{f:0.95}).f;
+  const renovEst=fmtBRL((r.premio||0)*bonusF);
+  const covHint=c=>{ if(c.fr){const f=RES.franquiaReferencia[c.fr]; if(f)return 'Franquia '+f.pct+'% · mín. '+fmtBRL0(f.min);} if(c.sub)return 'Sujeita a sublimite'; return 'Sem franquia'; };
+  const card=(t,inner)=>`<div style="background:#fff;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:var(--card-sh)"><div style="padding:16px 20px 4px"><div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase">${t}</div></div>${inner}</div>`;
+  const row=(k,v,last)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;${last?'':'border-bottom:1px solid var(--border)'}"><span style="font-size:13px;color:var(--txt2)">${k}</span><span style="font-size:13px;font-weight:700;color:var(--txt1);text-align:right;max-width:62%">${v}</span></div>`;
+  const covRow=(nome,desc,hint,incl,last)=>`<div style="padding:12px 20px;${last?'':'border-bottom:1px solid var(--border)'}"><div style="display:flex;align-items:flex-start;gap:11px"><div style="flex-shrink:0;margin-top:1px">${ico('check',17,'#46EF80')}</div><div style="flex:1"><div style="font-size:13.5px;font-weight:700;color:var(--txt1);line-height:1.3">${nome}${incl?' <span style=\\"font-size:9.5px;color:#279989;font-weight:800\\">· INCLUSA</span>':''}</div><div style="font-size:11.5px;color:var(--txt2);margin-top:2px;line-height:1.4">${desc}</div><div style="font-size:11px;color:#279989;font-weight:700;margin-top:3px">${hint}</div></div></div></div>`;
+  return `<div class="scr" style="background:var(--surf)">
+  ${sb(false)}
+  ${nb({back:'go-home',d:false,cancel:false,title:'Apólice'})}
+  <div style="background:var(--navy);padding:16px 24px 28px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="width:52px;height:52px;border-radius:16px;background:rgba(70,239,128,.14);border:1px solid rgba(70,239,128,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico('house',26,'#46EF80')}</div>
+      <div><div style="font-size:18px;font-weight:800;color:#fff">Seguro Residencial</div><div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:2px">${escapeHtml(p.item||'Residência')}</div></div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:5px;background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.2);border-radius:20px;padding:5px 12px"><div style="width:6px;height:6px;border-radius:50%;background:#46EF80;animation:pulseD 2s ease-in-out infinite"></div><span style="font-size:11px;font-weight:800;color:#46EF80">ATIVA</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;background:rgba(255,255,255,.05);border-radius:14px;padding:14px 16px">
+      <div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Mensalidade</div><div style="font-size:20px;font-weight:900;color:#46EF80">${fmtBRL(r.premio||0)}<span style="font-size:12px;font-weight:600;color:rgba(255,255,255,.5)">/mês</span></div></div>
+      <div style="text-align:right"><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">LMI (Limite Máx.)</div><div style="font-size:18px;font-weight:800;color:#fff">${fmtBRL0(lmi)}</div></div>
+    </div>
+  </div>
+  <div class="scrl" style="padding:16px 20px 36px">
+    <div style="position:relative;border-radius:20px;padding:20px;margin-bottom:14px;overflow:hidden;background:linear-gradient(135deg,#002430 0%,#00134d 55%,#000060 100%);box-shadow:0 12px 30px rgba(0,0,40,.35)">
+      <div style="position:absolute;right:-30px;top:-34px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(70,239,128,.2),transparent 70%)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1"><div><div style="font-size:10px;font-weight:800;letter-spacing:.18em;color:rgba(255,255,255,.6);text-transform:uppercase">Carteirinha digital</div><div style="font-size:17px;font-weight:900;color:#fff;margin-top:4px">Seguro Residencial</div></div><img src="${LOGO_SYM}" alt="" style="width:34px;height:auto;opacity:.95"></div>
+      <div style="margin-top:22px;position:relative;z-index:1"><div style="font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase">Segurado(a)</div><div style="font-size:15px;font-weight:700;color:#fff;margin-top:2px">${escapeHtml(holder)}</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;position:relative;z-index:1"><div><div style="font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase">Apólice</div><div style="font-size:13px;font-weight:700;color:#46EF80;font-family:monospace;margin-top:2px">${polNum}</div></div><div style="text-align:right"><div style="font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase">Válida até</div><div style="font-size:13px;font-weight:700;color:#fff;margin-top:2px">${fmt(end)}</div></div></div>
+    </div>
+    ${card('Informações da apólice',row('Número da apólice',polNum)+row('Registro SUSEP','em processo de registro')+row('Início da vigência',fmt(now))+row('Fim da vigência',fmt(end))+row('Forma de pagamento',pay,true))}
+    ${card('Modalidade e limites',row('Modalidade',modN)+row('Limite Máximo de Indenização',fmtBRL0(lmi))+row('Vigência',vigM+' meses')+row('Tipo de franquia',frN,true))}
+    ${card('Coberturas contratadas',covRow(RES.basica.nome,RES.basica.desc,'Cobertura principal',true,selCov.length===0)+selCov.map((c,i)=>covRow(c.nome,c.desc,covHint(c),false,i===selCov.length-1)).join(''))}
+    ${card('Assistências',(as?row(as.n+' · assistência residencial',fmtBRL(as.preco)+'/mês'):'')+(pt&&pt.v?row(pt.n+' · pet',fmtBRL(pt.preco)+'/mês',true):row('Sem assistência pet','—',true)))}
+    <div style="background:#fff;border-radius:16px;padding:16px 20px;margin-bottom:12px;box-shadow:var(--card-sh)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">${ico('warranty',18,'#279989')}<span style="font-size:13px;font-weight:800;color:var(--txt1)">Reintegração do LMI</span></div>
+      <div style="font-size:12.5px;color:var(--txt2);line-height:1.5;margin-bottom:10px">Após um sinistro, você pode recompor o Limite Máximo de Indenização e seguir protegido pelo resto da vigência.</div>
+      <div style="display:flex;gap:8px"><div style="flex:1;background:var(--surf);border-radius:12px;padding:10px 12px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--teal)">${reintRest}</div><div style="font-size:10.5px;color:var(--txt2)">reintegrações disponíveis</div></div><div style="flex:1;background:var(--surf);border-radius:12px;padding:10px 12px;text-align:center"><div style="font-size:18px;font-weight:900;color:var(--teal)">${Math.round(RES.reintegracao.bloqueio*100)}%</div><div style="font-size:10.5px;color:var(--txt2)">gatilho de bloqueio do LMI</div></div></div>
+    </div>
+    <div style="background:linear-gradient(135deg,#000060,#002430);border-radius:16px;padding:18px 20px;margin-bottom:12px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-20px;bottom:-24px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(70,239,128,.18),transparent 70%)"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;position:relative">${ico('bag',18,'#46EF80')}<span style="font-size:13px;font-weight:800;color:#fff">${RES.sorteio.nome}</span></div>
+      <div style="font-size:12.5px;color:rgba(255,255,255,.7);line-height:1.5;position:relative">Você está concorrendo a <strong style="color:#46EF80">${fmtBRL0(RES.sorteio.premio)}</strong> em sorteios mensais enquanto sua apólice estiver ativa. Boa sorte! 🍀</div>
+    </div>
+    <div style="background:rgba(70,239,128,.06);border:1px solid rgba(70,239,128,.18);border-radius:14px;padding:14px 16px;display:flex;gap:10px;align-items:flex-start;margin-bottom:14px">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#279989" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+      <span style="font-size:12px;color:var(--teal);line-height:1.5"><strong>Renovação automática ativada.</strong> Sem sinistro neste período, você ganha bônus na renovação — estimativa de <strong>${renovEst}/mês</strong> (−5%). Avisaremos 30 dias antes de ${fmt(end)}.</span>
+    </div>
+    <button data-a="endosso" class="btn btn-neon" style="width:100%;margin-bottom:10px">Alterar apólice (endosso)</button>
+    <div style="display:flex;gap:10px;margin-bottom:10px">
+      <button data-a="reintegrar" style="flex:1;background:#fff;border:1.5px solid rgba(39,153,137,.3);border-radius:14px;padding:13px;font-size:13.5px;font-weight:700;color:var(--teal);cursor:pointer;font-family:inherit">Solicitar reintegração</button>
+      <button data-a="go-sinistro" style="flex:1;background:rgba(220,38,38,.06);border:1.5px solid rgba(220,38,38,.2);border-radius:14px;padding:13px;font-size:13.5px;font-weight:700;color:#dc2626;cursor:pointer;font-family:inherit">Abrir sinistro</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <button data-a="soon" style="flex:1;background:var(--navy);border:none;border-radius:14px;padding:13px;font-size:13.5px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Baixar PDF</button>
+      <button data-a="cancelar-apolice" style="flex:1;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:13px;font-size:13.5px;font-weight:700;color:var(--txt2);cursor:pointer;font-family:inherit">Cancelar apólice</button>
+    </div>
+    <div style="background:rgba(39,153,137,.06);border:1px solid rgba(39,153,137,.2);border-radius:14px;padding:14px 16px;display:flex;gap:10px;align-items:flex-start">
+      <div style="flex-shrink:0">${ico('lock',16,'#279989')}</div>
+      <span style="font-size:12px;color:var(--teal);line-height:1.5">Seguro de Primeiro Risco Absoluto, regulado pela SUSEP e protegido pela LGPD. Dados criptografados ponta a ponta.</span>
+    </div>
+  </div>
+</div>`;
+}
 function rApoliceDetail(){
   const p=S.curPol||{type:'Seguro',icon:'shield',item:'—',price:'—',cov:'—',accent:'#279989',rgb:'39,153,137'};
+  if(p&&p.resid)return rApoliceResid(p);
   const covs=COVS[S.prod]||['Colisão total e parcial','Roubo e furto','Danos a terceiros','Assistência 24h nacional','Carro reserva por 10 dias','Cobertura de vidros'];
   const susep='em processo de registro';
   const polNum='VCE-'+String(Date.now()).slice(-8);
@@ -1320,6 +1510,227 @@ ${sb(true)}
 </div>`}
 
 // RESULT
+// ===================== JORNADA SEGURO RESIDENCIAL =====================
+function fmtBRL(n){return 'R$ '+Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtBRL0(n){return 'R$ '+Number(n||0).toLocaleString('pt-BR',{maximumFractionDigits:0});}
+const RES_STEPS=['dados','perfil','local','elig','modalidade','lmi','vigencia','cobs','quest','franquia','assist','revisao'];
+function resSteps(){ return S.authed?RES_STEPS.filter(s=>s!=='dados'):RES_STEPS; }
+function maskCPF(v){v=(v||'').replace(/\D/g,'').slice(0,11);if(v.length>9)return v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/,'$1.$2.$3-$4');if(v.length>6)return v.replace(/(\d{3})(\d{3})(\d{1,3})/,'$1.$2.$3');if(v.length>3)return v.replace(/(\d{3})(\d{1,3})/,'$1.$2');return v;}
+function maskTel(v){v=(v||'').replace(/\D/g,'').slice(0,11);if(v.length>10)return v.replace(/(\d{2})(\d{5})(\d{1,4})/,'($1) $2-$3');if(v.length>6)return v.replace(/(\d{2})(\d{4,5})(\d{1,4})/,'($1) $2-$3');if(v.length>2)return v.replace(/(\d{2})(\d{1,5})/,'($1) $2');if(v.length>0)return '('+v;return v;}
+function resRerender(){
+  try{
+    const cur=document.querySelector('#app .scr.active');
+    if(!cur){ nav(S.scr||'resid'); return; }
+    const y=cur.scrollTop;
+    const fn=(S.scr==='endosso')?rEndosso:rResid;
+    const wr=document.createElement('div'); wr.innerHTML=fn();
+    const neu=wr.firstElementChild; neu.classList.add('active');
+    cur.replaceWith(neu); neu.scrollTop=y; bind(neu);
+  }catch(e){ nav(S.scr||'resid'); }
+}
+function resInit(){
+  S.res={step:'',tipo:'',ocup:'',perfil:'',cep:(S.form&&S.form.cep)||'',email:'',cpf:'',wa:'',elig:{compart:'nao',construcao:'nao',rural:'nao'},modalidade:'predio_conteudo',lmi:RES.lmi.default,vig:12,cobs:{2:true,3:true,4:true,5:true,9:true,11:true},quest:{solar:false,sin:false,prot:[]},franquia:'padrao',assist:'conforto',pet:'pet_total'};
+  if(S.authed){ _seedPersonal(); S.res.email=(S.userEmail||(S.profile&&S.profile.email)||''); S.res.cpf=(S.form&&S.form.cpf)||S.userCpf||''; S.res.wa=(S.form&&S.form.wa)||S.userPhone||''; }
+  else { S.res.email=(S.form&&S.form.email)||''; S.res.cpf=(S.form&&S.form.cpf)||''; S.res.wa=(S.form&&S.form.wa)||''; }
+  S.res.step=resSteps()[0];
+}
+function resSavePending(){
+  try{
+    if(S.authed) return;
+    if(!S.res||_digits(S.res.cpf).length<11) return;
+    const q=resPremio();
+    const d=new Date(Date.now()+7*864e5); const validade=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+    const snap={type:'Seguro Residencial',icon:'house',item:((RES.tiposImovel.find(t=>t.v===S.res.tipo)||{}).n)||'Residência',price:fmtBRL(q.mensal)+'/mês',cov:fmtBRL0(S.res.lmi),validade:validade,planLabel:'Mensal',res:Object.assign({},S.res)};
+    const cpf=_digits(S.res.cpf), ph=_digits(S.res.wa);
+    _writePending(_readPending().filter(x=>!(x.status==='cotacao'&&x.prod==='casa'&&((cpf&&_digits(x.cpf)===cpf)||(ph&&_digits(x.phone)===ph)))));
+    addPendingQuote(S.res.email||'', S.res.cpf||'', S.res.wa||'', {prod:'casa',plan:'mensal',form:{email:S.res.email,cpf:S.res.cpf,wa:S.res.wa,cep:S.res.cep},snap:snap});
+  }catch(e){}
+}
+function resPremio(){
+  const r=S.res; let txa=RES.basica.txa;
+  RES.adicionais.forEach(c=>{if(r.cobs[c.id])txa+=c.txa;});
+  let anual=r.lmi*txa;
+  const ft=RES.franquiaTipos.find(f=>f.v===r.franquia)||{fator:1}; anual*=ft.fator;
+  if(r.quest.solar&&r.cobs[3])anual*=RES.questionario.solarCoef;
+  if(r.quest.sin)anual*=RES.questionario.sinistroCoef;
+  if(r.cobs[9]&&r.quest.prot.length){anual*=Math.max(0.90,1-0.02*r.quest.prot.length);}
+  const vg=RES.vigencias.find(v=>v.v===r.vig)||{fator:1}; anual*=vg.fator;
+  let mensal=anual/12;
+  const as=RES.assist.find(a=>a.v===r.assist); if(as)mensal+=as.preco;
+  const pt=RES.pet.find(p=>p.v===r.pet); if(pt)mensal+=pt.preco;
+  return {mensal:mensal,anual:mensal*12};
+}
+function _resOpt(g,o,sel){
+  const showIco=o.ico&&typeof I!=='undefined'&&I[o.ico];
+  return `<div data-a="res-pick" data-g="${g}" data-v="${o.v}" style="background:#fff;border:2px solid ${sel?'#46EF80':'rgba(0,36,48,.10)'};border-radius:16px;padding:13px 15px;margin-bottom:10px;display:flex;align-items:center;gap:13px;cursor:pointer">
+    ${showIco?`<div style="width:40px;height:40px;border-radius:12px;background:${sel?'rgba(70,239,128,.22)':'rgba(0,36,48,.05)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(o.ico,20,'#002430')}</div>`:''}
+    <div style="flex:1"><div style="font-size:15px;font-weight:700;color:var(--txt1)">${o.n}${o.rec?' <span style=\"font-size:10px;color:#279989;font-weight:800\">· RECOMENDADO</span>':''}${o.sel?` <span style=\"font-size:11px;color:#279989;font-weight:800\">${o.sel}</span>`:''}</div>${o.s?`<div style="font-size:12.5px;color:var(--txt2);margin-top:2px">${o.s}</div>`:''}</div>
+    <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${sel?'#46EF80':'rgba(0,36,48,.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${sel?'<div style="width:11px;height:11px;border-radius:50%;background:#46EF80"></div>':''}</div>
+  </div>`;
+}
+function _resCov(c,on){
+  let hint='';
+  if(c.fr){const f=RES.franquiaReferencia[c.fr];if(f)hint=`Franquia ${f.pct}% (mín. ${fmtBRL0(f.min)})`;}
+  else if(c.sub)hint='Sujeita a sublimite';
+  return `<div data-a="res-cov" data-id="${c.id}" style="background:#fff;border:2px solid ${on?'#46EF80':'rgba(0,36,48,.10)'};border-radius:14px;padding:13px 14px;margin-bottom:9px;display:flex;gap:12px;cursor:pointer;align-items:flex-start">
+    <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--txt1);line-height:1.3">${c.nome}</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:3px;line-height:1.4">${c.desc}</div>
+      ${hint?`<div style="font-size:11px;color:#279989;font-weight:700;margin-top:5px">${hint}</div>`:''}</div>
+    <div style="width:44px;height:26px;border-radius:13px;background:${on?'#46EF80':'rgba(0,36,48,.15)'};position:relative;flex-shrink:0;transition:background .2s;margin-top:2px"><div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:${on?'21px':'3px'};transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div></div>
+  </div>`;
+}
+function _resYN(k,val){
+  return `<div style="display:flex;gap:10px;margin-top:8px">
+    <button data-a="res-q" data-k="${k}" data-v="1" style="flex:1;background:${val===true?'#46EF80':'#fff'};color:${val===true?'#002430':'var(--txt1)'};border:1.5px solid ${val===true?'#46EF80':'rgba(0,36,48,.12)'};border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Sim</button>
+    <button data-a="res-q" data-k="${k}" data-v="0" style="flex:1;background:${val===false?'#E5484D':'#fff'};color:${val===false?'#fff':'var(--txt1)'};border:1.5px solid ${val===false?'#E5484D':'rgba(0,36,48,.12)'};border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Não</button>
+  </div>`;
+}
+function _resRecusa(){
+  const r=S.res; const reasons=[];
+  if(r.elig.compart==='sim')reasons.push('Imóvel de uso coletivo ou compartilhado (pensão, alojamento, pousada, cortiço, asilo, co-living, república ou ocupação rotativa).');
+  if(r.elig.construcao==='sim')reasons.push('Construção em palafita, imóvel flutuante ou com mais de 25% em madeira.');
+  if(r.elig.rural==='sim')reasons.push('Imóvel em zona rural ou isolado, sem acesso regular.');
+  return `<div class="scr" style="background:var(--surf);overflow-y:auto">
+  ${sb(false)}
+  ${nb({back:'res-back',d:false,cancel:true,title:'Seguro Residencial'})}
+  <div class="scrl" style="padding:8px 28px 24px;display:flex;flex-direction:column;align-items:center;text-align:center">
+    <div style="width:84px;height:84px;border-radius:24px;background:rgba(229,72,77,.10);display:flex;align-items:center;justify-content:center;margin:18px 0 18px">${ico('shield',40,'#E5484D')}</div>
+    <div style="font-size:22px;font-weight:800;color:var(--txt1);margin-bottom:10px">Esse imóvel não é elegível</div>
+    <div style="font-size:14px;color:var(--txt2);line-height:1.5;margin-bottom:18px">Pelas regras de aceitação do Seguro Residencial, este perfil de imóvel não pode ser contratado:</div>
+    <div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:16px 18px;text-align:left;width:100%">
+      ${reasons.map(x=>`<div style="display:flex;gap:10px;margin-bottom:10px"><div style="flex-shrink:0;margin-top:2px">${ico('lock',16,'#E5484D')}</div><div style="font-size:13px;color:var(--txt1);line-height:1.45">${x}</div></div>`).join('')||'<div style="font-size:13px;color:var(--txt2)">Revise suas respostas.</div>'}
+    </div>
+    <div style="font-size:12.5px;color:var(--txt3);line-height:1.5;margin-top:16px">Se você acha que houve um engano, revise suas respostas ou fale com a Vic, nossa assistente virtual.</div>
+  </div>
+  <div style="padding:0 24px 36px;flex-shrink:0">
+    <button class="btn btn-neon" data-a="res-back" style="margin-bottom:10px">Revisar respostas</button>
+    <button class="btn" data-a="res-chat" style="background:#fff;color:var(--txt1);border:1.5px solid rgba(0,36,48,.12);flex-direction:column;line-height:1.15">Falar com a Vic<span style="font-size:11px;font-weight:600;color:var(--txt3);margin-top:3px">Assistente virtual · resposta na hora</span></button>
+  </div>
+  </div>`;
+}
+function rResid(){
+  if(!S.res)resInit();
+  const r=S.res, step=r.step;
+  if(step==='recusa')return _resRecusa();
+  const steps=resSteps(); const idx=steps.indexOf(step), total=steps.length;
+  let body='',title='',sub='',btn='Continuar',nextA='res-next',canNext=true;
+  if(step==='dados'){
+    title='Seus dados'; sub='Usamos para emitir a apólice e guardar sua cotação — você pode continuar depois de onde parou.';
+    const fld=(lbl,id,attrs)=>`<div style="background:#fff;border:1.5px solid rgba(0,36,48,.10);border-radius:16px;padding:13px 16px;margin-bottom:12px"><div style="font-size:12px;font-weight:800;color:var(--txt3);margin-bottom:5px">${lbl}</div><input id="${id}" ${attrs} style="width:100%;border:none;outline:none;font-size:18px;font-weight:700;color:var(--txt1);font-family:inherit;background:none"/></div>`;
+    body=fld('E-MAIL','res-email',`type="email" inputmode="email" placeholder="voce@email.com" value="${(S.res.email||'').replace(/"/g,'&quot;')}"`)
+      +fld('CPF','res-cpf',`type="tel" inputmode="numeric" placeholder="000.000.000-00" value="${S.res.cpf||''}" oninput="this.value=maskCPF(this.value)"`)
+      +fld('WHATSAPP','res-wa',`type="tel" inputmode="numeric" placeholder="(00) 00000-0000" value="${S.res.wa||''}" oninput="this.value=maskTel(this.value)"`)
+      +`<div style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--txt3);margin-top:4px;line-height:1.5"><div style="flex-shrink:0;margin-top:1px">${ico('lock',13,'#279989')}</div><div>Seus dados são protegidos pela LGPD. Se você criar uma conta com este e-mail, a cotação aparece automaticamente nela.</div></div>`;
+  }
+  else if(step==='perfil'){
+    title='Sobre o seu imóvel'; sub='Essas informações definem a aceitação e o preço.';
+    body=`<div style="font-size:12px;font-weight:800;color:var(--txt3);margin-bottom:8px">TIPO DE IMÓVEL</div>${RES.tiposImovel.map(o=>_resOpt('tipo',o,r.tipo===o.v)).join('')}
+    <div style="font-size:12px;font-weight:800;color:var(--txt3);margin:16px 0 8px">OCUPAÇÃO</div>${RES.ocupacoes.map(o=>_resOpt('ocup',o,r.ocup===o.v)).join('')}
+    <div style="font-size:12px;font-weight:800;color:var(--txt3);margin:16px 0 8px">SEU PERFIL</div>${RES.perfis.map(o=>_resOpt('perfil',o,r.perfil===o.v)).join('')}`;
+    canNext=!!(r.tipo&&r.ocup&&r.perfil);
+  } else if(step==='local'){
+    title='Onde fica o imóvel?'; sub='O CEP define a aceitação regional e a tarifa da sua região.';
+    body=`<div style="background:#fff;border:1.5px solid rgba(0,36,48,.10);border-radius:16px;padding:16px 18px">
+      <div style="font-size:12px;font-weight:800;color:var(--txt3);margin-bottom:8px">CEP DO IMÓVEL</div>
+      <input id="res-cep" inputmode="numeric" maxlength="9" value="${r.cep||''}" placeholder="00000-000" style="width:100%;border:none;outline:none;font-size:22px;font-weight:700;color:var(--txt1);font-family:inherit;background:none"/>
+    </div>
+    <div style="font-size:12px;color:var(--txt3);margin-top:12px;line-height:1.5">Não cobrimos imóveis em zona rural ou em áreas de risco agravado, conforme a matriz de subscrição.</div>`;
+  } else if(step==='elig'){
+    title='Confirmação de elegibilidade'; sub='Algumas situações não são aceitas pelo produto. Responda com sinceridade.';
+    body=RES.elegibilidade.map(q=>`<div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:15px 16px;margin-bottom:12px">
+      <div style="font-size:14.5px;font-weight:700;color:var(--txt1);line-height:1.35">${q.q}</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:4px;line-height:1.4">${q.s}</div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button data-a="res-elig" data-k="${q.k}" data-v="sim" style="flex:1;background:${r.elig[q.k]==='sim'?'#46EF80':'#fff'};color:${r.elig[q.k]==='sim'?'#002430':'var(--txt1)'};border:1.5px solid ${r.elig[q.k]==='sim'?'#46EF80':'rgba(0,36,48,.12)'};border-radius:12px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Sim</button>
+        <button data-a="res-elig" data-k="${q.k}" data-v="nao" style="flex:1;background:${r.elig[q.k]==='nao'?'#E5484D':'#fff'};color:${r.elig[q.k]==='nao'?'#fff':'var(--txt1)'};border:1.5px solid ${r.elig[q.k]==='nao'?'#E5484D':'rgba(0,36,48,.12)'};border-radius:12px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Não</button>
+      </div></div>`).join('');
+  } else if(step==='modalidade'){
+    title='O que você quer proteger?'; sub='Modalidade de contratação do seguro.';
+    body=RES.modalidades.map(o=>_resOpt('modalidade',o,r.modalidade===o.v)).join('');
+  } else if(step==='lmi'){
+    title='Limite de indenização (LMI)'; sub='Valor máximo que a seguradora paga, no regime de Primeiro Risco Absoluto (sem rateio).';
+    const presets=[50000,100000,250000,500000,1000000];
+    body=`<div style="background:var(--navy);border-radius:20px;padding:22px;text-align:center;margin-bottom:16px">
+      <div style="font-size:12px;color:rgba(255,255,255,.5);font-weight:600;margin-bottom:6px">VALOR SEGURADO</div>
+      <div style="font-size:38px;font-weight:800;color:#46EF80;letter-spacing:-1px">${fmtBRL0(r.lmi)}</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+        <button data-a="res-lmi" data-d="-10000" style="width:46px;height:46px;border-radius:14px;border:none;background:rgba(255,255,255,.12);color:#fff;font-size:24px;font-weight:700;cursor:pointer">–</button>
+        <button data-a="res-lmi" data-d="10000" style="width:46px;height:46px;border-radius:14px;border:none;background:rgba(70,239,128,.2);color:#46EF80;font-size:24px;font-weight:700;cursor:pointer">+</button>
+      </div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">${presets.map(v=>`<button data-a="res-lmi" data-v="${v}" style="flex:1;min-width:30%;background:${r.lmi===v?'#279989':'#fff'};color:${r.lmi===v?'#fff':'var(--txt1)'};border:1.5px solid ${r.lmi===v?'#279989':'rgba(0,36,48,.12)'};border-radius:12px;padding:11px 6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">${v>=1000000?'R$ 1 mi':'R$ '+(v/1000)+' mil'}</button>`).join('')}</div>
+    <div style="font-size:12px;color:var(--txt3);margin-top:14px">Faixa do produto: ${fmtBRL0(RES.lmi.min)} a ${fmtBRL0(RES.lmi.max)} (Fase 1).</div>`;
+  } else if(step==='vigencia'){
+    title='Por quanto tempo?'; sub='Vigência da apólice. Prazos maiores têm incentivo comercial.';
+    body=RES.vigencias.map(o=>_resOpt('vig',o,r.vig===o.v)).join('');
+  } else if(step==='cobs'){
+    title='Coberturas'; sub='A básica é obrigatória. Escolha as adicionais que quiser.';
+    body=`<div style="background:#eaf6f1;border:1.5px solid #279989;border-radius:14px;padding:13px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:flex-start">
+      <div style="flex:1"><div style="font-size:14px;font-weight:800;color:var(--txt1)">${RES.basica.nome} <span style="font-size:10px;color:#279989;font-weight:800">· INCLUSA</span></div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:3px;line-height:1.4">${RES.basica.desc}</div></div>
+      <div style="flex-shrink:0;margin-top:2px">${ico('check',22,'#279989')}</div></div>`;
+    ['Eventos da Natureza','Água','Patrimonial','Roubo','Responsabilidade Civil','Despesas','Pessoas'].forEach(g=>{
+      const items=RES.adicionais.filter(c=>c.grupo===g); if(!items.length)return;
+      body+=`<div style="font-size:12px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 8px">${g}</div>`+items.map(c=>_resCov(c,!!r.cobs[c.id])).join('');
+    });
+  } else if(step==='quest'){
+    title='Questionário de risco'; sub='Suas respostas ajustam o preço de forma transparente.';
+    body=`<div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:15px 16px;margin-bottom:12px">
+      <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">O imóvel possui sistema de energia solar?</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:3px">Se tiver Danos Elétricos, aplica coeficiente de 1,05.</div>${_resYN('solar',r.quest.solar)}</div>
+    <div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:15px 16px;margin-bottom:12px">
+      <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">O risco possui histórico de sinistro?</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:3px">Sinistro anterior aplica coeficiente de 1,10.</div>${_resYN('sin',r.quest.sin)}</div>
+    <div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:15px 16px">
+      <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">Proteções contra roubo</div>
+      <div style="font-size:12px;color:var(--txt2);margin:3px 0 10px">Reduzem o preço quando há cobertura de Roubo contratada.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${RES.questionario.protecoes.map(p=>{const on=r.quest.prot.indexOf(p)>=0;return `<button data-a="res-prot" data-v="${p}" style="background:${on?'#46EF80':'#fff'};color:${on?'#002430':'var(--txt1)'};border:1.5px solid ${on?'#46EF80':'rgba(0,36,48,.12)'};border-radius:20px;padding:8px 13px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${p}</button>`;}).join('')}</div></div>`;
+  } else if(step==='franquia'){
+    title='Tipo de franquia'; sub='Sua participação no sinistro. Mais participação = mais barato.';
+    body=RES.franquiaTipos.map(o=>_resOpt('franquia',Object.assign({},o,{s:o.s+' · fator '+String(o.fator).replace('.',',')}),r.franquia===o.v)).join('');
+  } else if(step==='assist'){
+    title='Assistências'; sub='Serviços para o dia a dia. O pet é opcional e não usa o LMI.';
+    body=`<div style="font-size:12px;font-weight:800;color:var(--txt3);margin-bottom:8px">ASSISTÊNCIA RESIDENCIAL</div>`+
+      RES.assist.map(o=>_resOpt('assist',{v:o.v,n:o.n,s:'+ '+fmtBRL(o.preco)+'/mês · '+o.servicos.slice(0,3).join(', ')+'…'},r.assist===o.v)).join('')+
+      `<div style="font-size:12px;font-weight:800;color:var(--txt3);margin:16px 0 8px">ASSISTÊNCIA PET (OPCIONAL)</div>`+
+      RES.pet.map(o=>_resOpt('pet',{v:o.v,n:o.n,s:o.preco?('+ '+fmtBRL(o.preco)+'/mês'):'Não incluir'},r.pet===o.v)).join('');
+  } else if(step==='revisao'){
+    title='Resumo da sua proteção'; sub='Confira tudo antes de contratar.'; btn='Contratar agora'; nextA='resid-contratar';
+    const q=resPremio();
+    const selCov=RES.adicionais.filter(c=>r.cobs[c.id]);
+    const modN=(RES.modalidades.find(m=>m.v===r.modalidade)||{}).n;
+    const frN=(RES.franquiaTipos.find(f=>f.v===r.franquia)||{}).n;
+    const asN=(RES.assist.find(a=>a.v===r.assist)||{}).n;
+    const ptN=(RES.pet.find(p=>p.v===r.pet)||{}).n;
+    const rowsum=(k,v)=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(0,36,48,.06)"><span style="font-size:13px;color:var(--txt2)">${k}</span><span style="font-size:13px;font-weight:700;color:var(--txt1);text-align:right;max-width:60%">${v}</span></div>`;
+    body=`<div style="background:var(--navy);border-radius:22px;padding:22px;margin-bottom:16px;position:relative;overflow:hidden">
+      <div style="display:inline-flex;background:#46EF80;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:800;color:var(--navy);margin-bottom:14px">ESTIMATIVA</div>
+      <div style="font-size:42px;font-weight:800;color:#46EF80;line-height:1;letter-spacing:-1.5px">${fmtBRL(q.mensal)}</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:6px">por mês · ${fmtBRL(q.anual)}/ano</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:10px;line-height:1.4">Valor ilustrativo, calculado pelas regras do produto. A taxa final vem do estudo atuarial.</div>
+    </div>
+    <div style="background:#fff;border-radius:16px;padding:8px 16px;margin-bottom:14px">
+      ${rowsum('Modalidade',modN)}${rowsum('Limite de indenização',fmtBRL0(r.lmi))}${rowsum('Vigência',r.vig+' meses')}${rowsum('Coberturas',(1+selCov.length)+' (básica + '+selCov.length+')')}${rowsum('Franquia',frN)}${rowsum('Assistência',asN)}${rowsum('Pet',ptN)}
+    </div>
+    <div style="background:linear-gradient(135deg,rgba(70,239,128,.16),rgba(39,153,137,.06));border:1px solid rgba(70,239,128,.35);border-radius:16px;padding:15px 16px;display:flex;gap:13px;align-items:center;margin-bottom:6px">
+      <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#46EF80,#23c46a);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 5px 14px rgba(70,239,128,.42)">${ico('bag',22,'#002430')}</div>
+      <div style="font-size:12.5px;color:var(--txt2);line-height:1.5"><b style="font-size:13.5px;color:var(--txt1)">${RES.sorteio.nome}</b> <span style="font-size:14px">🍀</span><br>Concorra a <b style="color:#1f9e74">${fmtBRL0(RES.sorteio.premio)}</b> em sorteio mensal enquanto sua apólice estiver ativa.</div>
+    </div>`;
+  }
+  return `<div class="scr" style="background:var(--surf);overflow-y:auto">
+  ${sb(false)}
+  ${nb({back:idx<=0?'go-cats':'res-back',d:false,cancel:true,title:'Seguro Residencial'})}
+  <div style="padding:0 24px 4px;flex-shrink:0">
+    <div style="height:4px;background:rgba(0,36,48,.08);border-radius:2px;overflow:hidden;margin-bottom:14px"><div style="height:100%;width:${Math.round((idx+1)/total*100)}%;background:#279989;border-radius:2px;transition:width .3s"></div></div>
+    <div style="font-size:11px;color:var(--txt3);font-weight:700;margin-bottom:5px">PASSO ${idx+1} DE ${total}</div>
+    <div style="font-size:21px;font-weight:800;color:var(--txt1);line-height:1.2">${title}</div>
+    ${sub?`<div style="font-size:13px;color:var(--txt2);margin-top:5px;line-height:1.45">${sub}</div>`:''}
+  </div>
+  <div style="padding:14px 24px 8px">${body}</div>
+  <div style="padding:12px 24px 34px;flex-shrink:0">
+    <button class="btn btn-neon" data-a="${nextA}"${canNext?'':' disabled style="opacity:.45"'}>${btn}</button>
+  </div>
+  </div>`;
+}
 function rResult(){
   const p=gP();const pr=p.price;
   const price=S.plan==='mensal'?pr.m:pr.a;
@@ -1434,7 +1845,7 @@ ${nb({back:'go-payment',d:true,cancel:false,title:'Pagar com PIX'})}
     <button data-a="copy-pix" data-copy="${pixKey}" style="background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.2);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;color:#46EF80;cursor:pointer;font-family:inherit;width:100%">Copiar chave PIX</button>
   </div>
   <div style="display:flex;align-items:center;gap:12px;background:rgba(70,239,128,.06);border:1px solid rgba(70,239,128,.15);border-radius:12px;padding:14px;margin-bottom:20px">
-    <div style="font-size:24px">⏱️</div>
+    <div style="width:40px;height:40px;border-radius:12px;background:rgba(70,239,128,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#46EF80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
     <div><div style="font-size:13px;font-weight:700;color:#fff">QR Code válido por 30 minutos</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Após o pagamento, sua apólice é emitida automaticamente</div></div>
   </div>
   <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:24px;line-height:1.5">Abra o app do seu banco, selecione <strong style="color:#fff">PIX → Pagar</strong> e escaneie o QR Code ou use a chave acima.</div>
@@ -1588,31 +1999,38 @@ function rSuccess(){
   const p=gP();const pr=p.price;
   const price=S.plan==='mensal'?pr.m:pr.a;
   const payLabel={pix:'PIX',card:'Cartão de Crédito',boleto:'Boleto'}[S.payMethod]||'';
-  return`<div class="scr" style="background:var(--navy);align-items:center;justify-content:center">
+  return`<div class="scr" style="background:var(--navy)">
 ${sb(true)}
-<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;text-align:center">
-  <div style="width:100px;height:100px;margin-bottom:32px" class="ci">
-    <svg viewBox="0 0 100 100" fill="none" style="width:100px;height:100px">
+<div style="flex:1;overflow-y:auto">
+<div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 28px 24px;box-sizing:border-box;text-align:center">
+  <div style="width:74px;height:74px;margin-bottom:13px" class="ci">
+    <svg viewBox="0 0 100 100" fill="none" style="width:74px;height:74px">
       <circle cx="50" cy="50" r="50" fill="rgba(70,239,128,.12)"/>
       <circle cx="50" cy="50" r="38" fill="rgba(70,239,128,.22)"/>
       <circle cx="50" cy="50" r="26" fill="#46EF80"/>
       <path d="M34 50l12 12 20-22" stroke="#002430" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </div>
-  <div style="font-size:28px;font-weight:800;color:#fff;line-height:1.25;margin-bottom:12px">Seguro contratado<br>com sucesso! 🎉</div>
-  <div style="font-size:15px;color:var(--muted);line-height:1.6;margin-bottom:32px">Sua apólice foi enviada para o WhatsApp cadastrado.</div>
-  <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;width:100%;margin-bottom:32px;text-align:left">
-    ${[['Seguro',`${p.name}`],['Plano',S.plan==='mensal'?'Mensal':'Anual'],['Valor',`${price}/mês`],['Cobertura',pr.cov],['Pagamento',payLabel],['Status','● Ativo agora']].map(([k,v],i)=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:${i<5?'1px solid rgba(255,255,255,.06)':'none'}"><span style="font-size:13px;color:var(--muted)">${k}</span><span style="font-size:13px;font-weight:700;color:${i===5?'#46EF80':'#fff'}">${v}</span></div>`).join('')}
+  <div style="font-size:23px;font-weight:800;color:#fff;line-height:1.25;margin-bottom:7px">Seguro contratado<br>com sucesso!<svg width="21" height="21" viewBox="0 0 24 24" fill="none" style="display:inline-block;vertical-align:-3px;margin-left:5px"><path d="M12 2.5l1.7 5.3 5.3 1.7-5.3 1.7L12 16.5l-1.7-5.3L5 9.5l5.3-1.7z" fill="#46EF80"/><circle cx="18.6" cy="4.4" r="1.3" fill="#46EF80"/><circle cx="5.2" cy="16.2" r="1.1" fill="#46EF80"/></svg></div>
+  <div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:16px">Sua apólice foi enviada para o WhatsApp cadastrado.</div>
+  <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:8px 16px;width:100%;margin-bottom:14px;text-align:left">
+    ${[['Seguro',`${p.name}`],['Plano',S.plan==='mensal'?'Mensal':'Anual'],['Valor',`${price}/mês`],['Cobertura',pr.cov],['Pagamento',payLabel],['Status','● Ativo agora']].map(([k,v],i)=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:${i<5?'1px solid rgba(255,255,255,.06)':'none'}"><span style="font-size:12.5px;color:var(--muted)">${k}</span><span style="font-size:12.5px;font-weight:700;color:${i===5?'#46EF80':'#fff'}">${v}</span></div>`).join('')}
   </div>
-  ${S.authed?'':`<div style="background:rgba(255,255,255,.05);border:1px solid rgba(70,239,128,.25);border-radius:16px;padding:18px;width:100%;margin-bottom:16px;text-align:left">
-    <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:4px">Vincule à sua conta</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:14px;line-height:1.5">Informe e-mail e CPF. Ao criar sua conta com este e-mail, esta apólice aparece automaticamente nela.</div>
-    <div class="iw" style="margin-bottom:10px"><div class="ilbl">E-MAIL</div><input class="inp" id="suc-email" type="email" inputmode="email" placeholder="voce@email.com"></div>
-    <div class="iw" style="margin-bottom:12px"><div class="ilbl">CPF</div><input class="inp" id="suc-cpf" type="tel" inputmode="numeric" placeholder="000.000.000-00"></div>
-    <div id="suc-msg" style="font-size:12px;min-height:16px;margin-bottom:8px;line-height:1.4"></div>
-    <button class="btn btn-neon" id="btn-vincular" style="height:48px">Salvar para minha conta</button>
-  </div>`}
-  <button class="btn btn-neon" data-a="go-home" style="width:100%">Ver minha apólice →</button>
+  ${S.authed
+    ? `<button class="btn btn-neon" data-a="go-home" style="width:100%">Ver minha apólice →</button>`
+    : `<div style="background:rgba(70,239,128,.08);border:1px solid rgba(70,239,128,.25);border-radius:16px;padding:14px;width:100%;margin-bottom:12px;text-align:left">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">${ico('check',17,'#46EF80')}<span style="font-size:13.5px;font-weight:800;color:#fff">Apólice já vinculada a você</span></div>
+    <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:10px;line-height:1.5">Guardamos sua apólice no CPF e e-mail informados. É só criar conta ou entrar com os mesmos dados — ela já estará lá.</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:rgba(255,255,255,.45)">E-mail</span><span style="color:#fff;font-weight:600">${(S.form.email||'').replace(/^(.{2}).*(@.*)$/,'$1•••$2')||'—'}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:rgba(255,255,255,.45)">CPF</span><span style="color:#fff;font-weight:600">${(()=>{const d=_digits(S.form.cpf||'');return d.length>=11?('•••.•••.'+d.slice(6,9)+'-'+d.slice(9,11)):(S.form.cpf||'—');})()}</span></div>
+    </div>
+  </div>
+  <button class="btn btn-neon" data-a="suc-criar" style="width:100%;margin-bottom:8px">Criar minha conta</button>
+  <button class="btn" data-a="suc-entrar" style="width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.16)">Já tenho conta · Entrar</button>
+  <button class="btn" data-a="go-home" style="width:100%;background:transparent;color:rgba(255,255,255,.5);margin-top:4px;height:38px;font-size:12.5px">Ver agora sem entrar</button>`
+  }
+</div>
 </div>
 </div>`}
 
@@ -1748,11 +2166,11 @@ ${sb(false)}
   </div>
   <div style="margin:0 16px 16px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.1em;padding:14px 20px 4px;text-transform:uppercase">AJUDA</div>
-    ${row('bolt','Dúvidas frequentes','Pergunte à Vitória','go-chat')}
+    ${row('bolt','Dúvidas frequentes','Pergunte à Vic','go-chat')}
     ${row('lock','Alterar senha','Trocar sua senha de acesso','go-change-password')}
     <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;border-bottom:1px solid #f0f2f5" data-a="go-chat">
       <div style="width:32px;height:32px;border-radius:10px;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico('family',17,'#002430')}</div>
-      <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--txt1)">Converse com a Vitória</div><div style="font-size:12px;color:var(--txt3);margin-top:1px">Tire dúvidas sobre seguros</div></div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--txt1)">Converse com a Vic</div><div style="font-size:12px;color:var(--txt3);margin-top:1px">Tire dúvidas sobre seguros</div></div>
       <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;color:#bbb"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </div>
     ${row('shield','Central de sinistros','Abrir ou acompanhar um sinistro','go-sinistro')}
@@ -1830,7 +2248,7 @@ function rChat(){
     if(restored){ S.chat=restored; }
     else{
       const nome=((S.form&&S.form.name)||'').split(' ')[0];
-      S.chat=[{who:'bot',text:(nome?('Olá, '+nome+'! 👋 '):'Olá! 👋 ')+'Sou a Vitória, assistente virtual da Você Seguradora. Posso tirar dúvidas sobre seguros, coberturas, sinistros, pagamento e contratação. Como posso ajudar?',actions:[],t:T()}];
+      S.chat=[{who:'bot',text:(nome?('Olá, '+nome+'! 👋 '):'Olá! 👋 ')+'Sou a Vic, assistente virtual da Você Seguradora. Posso tirar dúvidas sobre seguros, coberturas, sinistros, pagamento e contratação. Como posso ajudar?',actions:[],t:T()}];
     }
   }
   const bubbles=S.chat.map(m=>_chatBubble(m)).join('');
@@ -1838,8 +2256,8 @@ function rChat(){
   const chips=chipsFor(lastTopic).map(c=>`<button data-chip="${c}" style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:8px 12px;font-size:12px;color:var(--txt1);white-space:nowrap;cursor:pointer;font-family:inherit;font-weight:600;flex-shrink:0">${c}</button>`).join('');
   return`<div class="scr" style="background:var(--surf)">
   ${sb(false)}
-  ${nb({back:'go-conta',d:false,cancel:false,title:'Vitória'})}
-  <div style="text-align:center;font-size:11px;color:var(--txt3);padding:0 18px 8px;background:var(--surf);flex-shrink:0">Vitória · assistente virtual</div>
+  ${nb({back:'go-conta',d:false,cancel:false,title:'Vic'})}
+  <div style="text-align:center;font-size:11px;color:var(--txt3);padding:0 18px 8px;background:var(--surf);flex-shrink:0">Vic · assistente virtual</div>
   <div class="scrl" id="chat-scroll" style="padding:8px 18px 8px;background:var(--surf)">
     ${bubbles}
     <div id="chat-typing" style="display:none;gap:8px;margin-bottom:14px;align-items:flex-end">
@@ -2078,10 +2496,13 @@ function nav(id){
   switch(id){
     case 'splash':     goTo('splash',rSplash()); break;
     case 'onboarding': goTo('onboarding',rOnboarding()); break;
+    case 'resid':      goTo('resid',rResid()); break;
     case 'login':      goTo('login',rLogin()); break;
     case 'faceid-prompt': goTo('faceid-prompt',rFaceidPrompt()); break;
     case 'cadastro':   goTo('cadastro',rCadastro()); break;
     case 'apolice':    goTo('apolice',rApoliceDetail()); break;
+    case 'endosso':    goTo('endosso',rEndosso()); break;
+    case 'cancelar-apolice': goTo('cancelar-apolice',rCancelarApolice()); break;
     case 'sinistro':   goTo('sinistro',rSinistro()); break;
     case 'sinistro-detalhe': goTo('sinistro-detalhe',rSinistroDetalhe()); break;
     case 'sinistro-confirm': goTo('sinistro-confirm',rSinistroConfirm()); break;
@@ -2320,26 +2741,7 @@ function bind(el){
     setTimeout(()=>chatInp.focus(),200);
   }
 
-  // ── VINCULAR APÓLICE (cotação sem conta) ──
-  const btnVinc=el.querySelector('#btn-vincular');
-  if(btnVinc){
-    const sucMsg=el.querySelector('#suc-msg');
-    const cpfV=el.querySelector('#suc-cpf');
-    if(cpfV)cpfV.addEventListener('input',()=>{let x=cpfV.value.replace(/\D/g,'').slice(0,11);x=x.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');cpfV.value=x;});
-    btnVinc.addEventListener('click',()=>{
-      const email=(el.querySelector('#suc-email')?.value||'').trim().toLowerCase();
-      const cpf=(cpfV?.value||'').trim();
-      if(!email||!email.includes('@')){if(sucMsg){sucMsg.style.color='#ff6b6b';sucMsg.textContent='Informe um e-mail válido.';}return;}
-      if(S.prod){
-        const p=gP();const pr=p.price;const price=(S.plan==='mensal'?pr.m:pr.a)+'/mês';
-        const item=S.form.modelo||S.form.placa||S.form.beneficiario||'Contratado';
-        addPendingPolicy(email,cpf,{type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov});
-        try{_writePending(_readPending().filter(x=>!(x.status==='cotacao'&&_matchPending(x,email,cpf))));}catch(e){}
-      }
-      btnVinc.textContent='✓ Salvo!';btnVinc.disabled=true;
-      if(sucMsg){sucMsg.style.color='#46EF80';sucMsg.textContent='Pronto! Crie sua conta com '+email+' que esta apólice aparece nela.';}
-    });
-  }
+  // (Vínculo de apólice de visitante agora é automático na contratação — ver go-home)
 
   // ── SINISTRO: data + anexos ──
   const sinData=el.querySelector('#sin-data');
@@ -2527,10 +2929,48 @@ function bind(el){
       toast(a==='copy-pix'?'Chave PIX copiada! ✓':'Linha digitável copiada! ✓');
     }
     else if(a==='go-cats')nav('cats');
+    else if(a==='res-back'){ const steps=resSteps(); if(S.res.step==='recusa'){S.res.step='elig';} else {const i=steps.indexOf(S.res.step); if(i>0)S.res.step=steps[i-1]; else {nav('cats');return;}} nav('resid'); }
+    else if(a==='res-next'){
+      const steps=resSteps(); const st=S.res.step;
+      if(st==='dados'){
+        const e=document.getElementById('res-email'),c=document.getElementById('res-cpf'),w=document.getElementById('res-wa');
+        const email=((e&&e.value)||'').trim(), cpf=_digits((c&&c.value)||''), wa=_digits((w&&w.value)||'');
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast('Informe um e-mail válido');return;}
+        if(cpf.length!==11){toast('Informe um CPF válido');return;}
+        if(wa.length<10){toast('Informe um WhatsApp válido (com DDD)');return;}
+        S.res.email=email; S.res.cpf=c.value; S.res.wa=w.value;
+        S.form.email=email; S.form.cpf=c.value; S.form.wa=w.value;
+      }
+      if(st==='perfil'&&!(S.res.tipo&&S.res.ocup&&S.res.perfil)){toast('Selecione as três opções');return;}
+      if(st==='local'){const inp=document.getElementById('res-cep'); if(inp)S.res.cep=inp.value; if(_digits(S.res.cep).length<8){toast('Informe um CEP válido');return;}}
+      if(st==='elig'&&(S.res.elig.compart==='sim'||S.res.elig.construcao==='sim'||S.res.elig.rural==='sim')){S.res.step='recusa';nav('resid');return;}
+      const i=steps.indexOf(st); if(i<steps.length-1){S.res.step=steps[i+1]; resSavePending(); nav('resid');}
+    }
+    else if(a==='res-pick'){ const g=b.dataset.g,v=b.dataset.v; S.res[g]=(g==='vig')?Number(v):v; resRerender(); }
+    else if(a==='res-elig'){ S.res.elig[b.dataset.k]=b.dataset.v; resRerender(); }
+    else if(a==='res-lmi'){ if(b.dataset.v){S.res.lmi=Number(b.dataset.v);} else if(b.dataset.d){S.res.lmi=Math.min(RES.lmi.max,Math.max(RES.lmi.min,S.res.lmi+Number(b.dataset.d)));} resRerender(); }
+    else if(a==='res-cov'){ const id=Number(b.dataset.id); S.res.cobs[id]=!S.res.cobs[id]; resRerender(); }
+    else if(a==='res-q'){ S.res.quest[b.dataset.k]=(b.dataset.v==='1'); resRerender(); }
+    else if(a==='res-prot'){ const v=b.dataset.v,arr=S.res.quest.prot,i=arr.indexOf(v); if(i<0)arr.push(v);else arr.splice(i,1); resRerender(); }
+    else if(a==='res-chat'){ nav('chat'); }
+    else if(a==='resid-contratar'){ const q=resPremio(); PRODS.casa.price={m:fmtBRL(q.mensal),a:fmtBRL(q.mensal),at:fmtBRL(q.anual),badge:'Estimativa',cov:fmtBRL0(S.res.lmi)}; S.plan='mensal'; resSavePending(); nav('termos'); }
     else if(a==='go-result')nav('result');
     else if(a==='go-payment')nav('payment');
     else if(a==='go-termos'){ if(!S.authed)saveGuestQuote(); nav('termos'); }
     else if(a==='go-apolice')nav('apolice');
+    else if(a==='endosso'){ const r=S.curPol&&S.curPol.resid; if(!r){toast('Apólice não encontrada');return;}
+      S.res={step:'revisao',tipo:r.tipo||'',ocup:'',perfil:'',cep:r.cep||'',email:S.userEmail||'',cpf:S.userCpf||'',wa:S.userPhone||'',elig:{compart:'nao',construcao:'nao',rural:'nao'},modalidade:r.modalidade,lmi:r.lmi,vig:r.vig,cobs:{},quest:{solar:false,sin:false,prot:[]},franquia:r.franquia,assist:r.assist,pet:r.pet};
+      (r.cobs||[]).forEach(id=>{S.res.cobs[id]=true;});
+      S.endossoBase=resPremio().mensal; nav('endosso');
+    }
+    else if(a==='aplicar-endosso'){ const r=S.curPol&&S.curPol.resid; if(!r){nav('home');return;} const q=resPremio();
+      r.lmi=S.res.lmi; r.cobs=Object.keys(S.res.cobs).filter(k=>S.res.cobs[k]).map(Number); r.assist=S.res.assist; r.pet=S.res.pet; r.premio=q.mensal;
+      S.curPol.price=fmtBRL(q.mensal)+'/mês'; S.curPol.cov=fmtBRL0(S.res.lmi);
+      toast('Endosso aplicado ✓'); nav('apolice');
+    }
+    else if(a==='reintegrar'){ const r=S.curPol&&S.curPol.resid; if(!r)return; const used=r.reint||0; if(used>=RES.reintegracao.max){toast('Limite de '+RES.reintegracao.max+' reintegrações atingido');return;} r.reint=used+1; toast('Reintegração solicitada ✓ ('+r.reint+'/'+RES.reintegracao.max+')'); nav('apolice'); }
+    else if(a==='cancelar-apolice')nav('cancelar-apolice');
+    else if(a==='confirmar-cancelamento'){ const idx=S.policies.indexOf(S.curPol); if(idx>=0)S.policies.splice(idx,1); S.curPol=null; toast('Apólice cancelada'); nav('home'); }
     else if(a==='go-sinistro')nav('sinistro');
     else if(a==='go-sinistro-detalhe')nav('sinistro-detalhe');
     else if(a==='go-sinistro-confirm'){
@@ -2551,17 +2991,24 @@ function bind(el){
         if(pm==='card'){const dg=(S.cardForm&&S.cardForm.num||'').replace(/\D/g,'');const last4=dg.slice(-4);const br=(typeof detectBrand==='function'?detectBrand(dg):'');pagamento='Cartão •••• '+(last4||'????')+(br?' ('+br+')':'');}
         else if(pm==='pix')pagamento='PIX';
         else if(pm==='boleto')pagamento='Boleto';
-        const pol={type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov,pagamento:pagamento,accent:'#279989',rgb:'39,153,137'};
+        const pol={type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov,pagamento:pagamento,accent:'#279989',rgb:'39,153,137',ts:Date.now()};
+        if(p.resid&&S.res){ const q=resPremio(); pol.cov=fmtBRL0(S.res.lmi); pol.price=fmtBRL(q.mensal)+'/mês'; pol.item=((RES.tiposImovel.find(t=>t.v===S.res.tipo)||{}).n)||'Residência'; pol.resid={modalidade:S.res.modalidade,lmi:S.res.lmi,vig:S.res.vig,cobs:Object.keys(S.res.cobs).filter(k=>S.res.cobs[k]).map(Number),franquia:S.res.franquia,assist:S.res.assist,pet:S.res.pet,premio:q.mensal,cep:S.res.cep}; }
         const u=await currentUser();
         if(u){ await savePolicy(pol); }
-        else { if(!S.policies.find(x=>x.type===pol.type)) S.policies.push(pol); }
+        else {
+          if(!S.policies.find(x=>x.type===pol.type)) S.policies.push(pol);
+          try{ const _e=(S.form.email||S.userEmail||'').toLowerCase(), _c=_digits(S.form.cpf||S.userCpf||''); if(_e||_c){ const _pd=_readPending(); const dup=_pd.find(x=>x.status==='paga'&&x.pol&&x.pol.type===pol.type&&((_e&&(x.email||'').toLowerCase()===_e)||(_c&&_digits(x.cpf)===_c))); if(!dup) addPendingPolicy(_e,_c,pol); } }catch(e){}
+        }
         if(S._activatingTs){ removePendingQuote(S._activatingTs); S._activatingTs=null; }
+        if(p.resid){ const cpf=_digits(S.form.cpf), ph=_digits(S.form.wa); try{_writePending(_readPending().filter(x=>!(x.status==='cotacao'&&x.prod==='casa'&&((cpf&&_digits(x.cpf)===cpf)||(ph&&_digits(x.phone)===ph)))));}catch(e){} }
       }
       nav('home');
     }
     else if(a==='go-success')nav('success');
-    else if(a==='ativar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; nav('payment'); } }
-    else if(a==='alterar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; nav('result'); } }
+    else if(a==='suc-criar'){ nav('cadastro'); try{const e=document.querySelector('#cad-email'); if(e&&S.form.email)e.value=S.form.email; const c=document.querySelector('#cad-cpf'); if(c&&S.form.cpf)c.value=S.form.cpf;}catch(_e){} }
+    else if(a==='suc-entrar'){ nav('login'); try{const e=document.querySelector('#login-email'); if(e&&S.form.email)e.value=S.form.email;}catch(_e){} }
+    else if(a==='ativar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; if(PRODS[q.prod]&&PRODS[q.prod].resid){ if(q.snap&&q.snap.res){S.res=Object.assign({},q.snap.res);}else{resInit();} const qp=resPremio(); PRODS.casa.price={m:fmtBRL(qp.mensal),a:fmtBRL(qp.mensal),at:fmtBRL(qp.anual),badge:'Estimativa',cov:fmtBRL0(S.res.lmi)}; nav('payment'); } else nav('payment'); } }
+    else if(a==='alterar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; if(PRODS[q.prod]&&PRODS[q.prod].resid){ if(q.snap&&q.snap.res){S.res=Object.assign({},q.snap.res);}else{resInit();} S.res.step='revisao'; nav('resid'); } else nav('result'); } }
     else if(a==='sel-cat'||a==='noop'){}
     else if(a==='form-back')formBack();
     else if(a==='cancel'){S.step=0;nav(S.cat?'prods-'+S.cat:'cats');}
@@ -2587,6 +3034,7 @@ function bind(el){
   // Product cards
   el.querySelectorAll('[data-pid]').forEach(c=>c.addEventListener('click',()=>{
     S.prod=c.dataset.pid;S.form={};S._activatingTs=null;
+    if(PRODS[S.prod]&&PRODS[S.prod].resid){ resInit(); nav('resid'); return; }
     _seedPersonal();
     formGoStep(0);
   }));
