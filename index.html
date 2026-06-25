@@ -1413,7 +1413,7 @@ function rSinistroConfirm(){
 function rTermos(){
   return`<div class="scr" style="background:var(--surf)">
   ${sb(false)}
-  ${nb({back:'go-result',d:false,cancel:true,title:'Termos de contratação'})}
+  ${nb({back:'termos-back',d:false,cancel:true,title:'Termos de contratação'})}
   <div style="flex:1;overflow-y:auto;padding:20px 24px;-webkit-overflow-scrolling:touch" id="termos-scroll">
     <div style="font-size:17px;font-weight:800;color:var(--txt1);margin-bottom:4px">Condições gerais do seguro</div>
     <div style="font-size:12px;color:var(--txt3);margin-bottom:20px">Registro SUSEP em processo · Leia com atenção antes de contratar</div>
@@ -1611,7 +1611,7 @@ function resRerender(){
   }catch(e){ nav(S.scr||'resid'); }
 }
 function resInit(){
-  S.res={step:'',tipo:'',ocup:'',perfil:'',cep:(S.form&&S.form.cep)||'',email:'',cpf:'',wa:'',elig:{compart:'nao',construcao:'nao',rural:'nao'},modalidade:'predio_conteudo',lmi:RES.lmi.default,vig:12,cobs:{2:true,3:true,4:true,5:true,9:true,11:true},quest:{solar:false,sin:false,prot:[]},franquia:'padrao',assist:'conforto',pet:'pet_total'};
+  S.res={step:'',tipo:'',ocup:'',perfil:'',cep:(S.form&&S.form.cep)||'',email:'',cpf:'',wa:'',elig:{compart:'nao',construcao:'nao',rural:'nao'},modalidade:'predio_conteudo',lmi:RES.lmi.default,vig:36,cobs:{2:true,3:true,4:true,5:true,9:true,11:true},quest:{solar:false,sin:false,prot:[]},franquia:'padrao',assist:'conforto',pet:'pet_total'};
   if(S.authed){ _seedPersonal(); S.res.email=(S.userEmail||(S.profile&&S.profile.email)||''); S.res.cpf=(S.form&&S.form.cpf)||S.userCpf||''; S.res.wa=(S.form&&S.form.wa)||S.userPhone||''; }
   else { S.res.email=(S.form&&S.form.email)||''; S.res.cpf=(S.form&&S.form.cpf)||''; S.res.wa=(S.form&&S.form.wa)||''; }
   S.res.step=resSteps()[0];
@@ -1647,7 +1647,7 @@ function _resOpt(g,o,sel){
   return `<div data-a="res-pick" data-g="${g}" data-v="${o.v}" style="background:#fff;border:2px solid ${sel?'#46EF80':'rgba(0,36,48,.10)'};border-radius:16px;padding:13px 15px;margin-bottom:10px;display:flex;align-items:center;gap:13px;cursor:pointer">
     ${showIco?`<div style="width:40px;height:40px;border-radius:12px;background:${sel?'rgba(70,239,128,.22)':'rgba(0,36,48,.05)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(o.ico,20,'#002430')}</div>`:''}
     <div style="flex:1"><div style="font-size:15px;font-weight:700;color:var(--txt1)">${o.n}${o.rec?' <span style=\"font-size:10px;color:#279989;font-weight:800\">· RECOMENDADO</span>':''}${o.sel?` <span style=\"font-size:11px;color:#279989;font-weight:800\">${o.sel}</span>`:''}</div>${o.s?`<div style="font-size:12.5px;color:var(--txt2);margin-top:2px">${o.s}</div>`:''}</div>
-    <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${sel?'#46EF80':'rgba(0,36,48,.2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${sel?'<div style="width:11px;height:11px;border-radius:50%;background:#46EF80"></div>':''}</div>
+    <div style="position:relative;width:22px;height:22px;border-radius:50%;border:2px solid ${sel?'#46EF80':'rgba(0,36,48,.2)'};box-sizing:border-box;flex-shrink:0">${sel?'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;background:#46EF80"></div>':''}</div>
   </div>`;
 }
 function _resCov(c,on){
@@ -1759,7 +1759,7 @@ function rResid(){
       <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">O imóvel já teve sinistros anteriores?</div>${_resYN('sin',r.quest.sin)}</div>
     <div style="background:#fff;border:1px solid rgba(0,36,48,.08);border-radius:16px;padding:15px 16px">
       <div style="font-size:14.5px;font-weight:700;color:var(--txt1)">Proteções contra roubo</div>
-      <div style="font-size:12px;color:var(--txt2);margin:3px 0 10px">Selecione os itens de segurança que o imóvel possui — podem reduzir o seu preço.</div>
+      <div style="font-size:12px;color:var(--txt2);margin:3px 0 10px">Selecione os itens de segurança que o imóvel possui.</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px">${RES.questionario.protecoes.map(p=>{const on=r.quest.prot.indexOf(p)>=0;return `<button data-a="res-prot" data-v="${p}" style="background:${on?'#46EF80':'#fff'};color:${on?'#002430':'var(--txt1)'};border:1.5px solid ${on?'#46EF80':'rgba(0,36,48,.32)'};border-radius:20px;padding:8px 13px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${p}</button>`;}).join('')}</div></div>`;
   } else if(step==='franquia'){
     title='Tipo de franquia'; sub='Sua participação no sinistro. Mais participação = mais barato.';
@@ -1783,7 +1783,6 @@ function rResid(){
       <div style="display:inline-flex;background:#46EF80;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:800;color:var(--navy);margin-bottom:14px">ESTIMATIVA</div>
       <div style="font-size:42px;font-weight:800;color:#46EF80;line-height:1;letter-spacing:-1.5px">${fmtBRL(q.mensal)}</div>
       <div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:6px">por mês · ${fmtBRL(q.anual)}/ano</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:10px;line-height:1.4">Valor ilustrativo. A taxa final é confirmada na análise da sua proposta.</div>
     </div>
     <div style="background:#fff;border-radius:16px;padding:8px 16px;margin-bottom:14px">
       ${rowsum('Modalidade',modN)}${rowsum('Limite de indenização',fmtBRL0(r.lmi))}${rowsum('Vigência',r.vig+' meses')}${rowsum('Coberturas',(1+selCov.length)+' (básica + '+selCov.length+')')}${rowsum('Franquia',frN)}${rowsum('Assistência',asN)}${rowsum('Pet',ptN)}
@@ -1818,7 +1817,7 @@ function rResult(){
   </div>`).join('');
   return`<div class="scr" style="background:var(--surf);overflow-y:auto">
 ${sb(false)}
-${nb({back:'go-cats',d:false,cancel:true})}
+${nb({back:'result-back',d:false,cancel:true})}
 <div style="padding:0 24px 8px;flex-shrink:0">
   <div style="font-size:13px;color:var(--txt2);font-weight:500;margin-bottom:4px">Cotação para</div>
   <div style="display:flex;align-items:center;gap:10px">
@@ -3067,10 +3066,12 @@ function bind(el){
     else if(a==='res-q'){ S.res.quest[b.dataset.k]=(b.dataset.v==='1'); resRerender(); }
     else if(a==='res-prot'){ const v=b.dataset.v,arr=S.res.quest.prot,i=arr.indexOf(v); if(i<0)arr.push(v);else arr.splice(i,1); resRerender(); }
     else if(a==='res-chat'){ nav('chat'); }
-    else if(a==='resid-contratar'){ const q=resPremio(); PRODS.casa.price={m:fmtBRL(q.mensal),a:fmtBRL(q.mensal),at:fmtBRL(q.anual),badge:'Estimativa',cov:fmtBRL0(S.res.lmi)}; S.plan='mensal'; resSavePending(); nav('termos'); }
+    else if(a==='resid-contratar'){ const q=resPremio(); PRODS.casa.price={m:fmtBRL(q.mensal),a:fmtBRL(q.mensal),at:fmtBRL(q.anual),badge:'Estimativa',cov:fmtBRL0(S.res.lmi)}; S.plan='mensal'; resSavePending(); S.res.step='revisao'; S.termosFrom='resid'; nav('termos'); }
     else if(a==='go-result')nav('result');
+    else if(a==='termos-back'){ if(S.termosFrom==='resid'){ if(!S.res)resInit(); S.res.step='revisao'; nav('resid'); } else nav('result'); }
+    else if(a==='result-back'){ if(S.prod&&PRODS[S.prod]&&PRODS[S.prod].resid){ if(!S.res)resInit(); S.res.step='revisao'; nav('resid'); } else { const fl=gFlow(); S.step=fl.length; formBack(); } }
     else if(a==='go-payment')nav('payment');
-    else if(a==='go-termos'){ if(!S.authed)saveGuestQuote(); nav('termos'); }
+    else if(a==='go-termos'){ if(!S.authed)saveGuestQuote(); S.termosFrom='result'; nav('termos'); }
     else if(a==='go-apolice')nav('apolice');
     else if(a==='endosso'){ const r=S.curPol&&S.curPol.resid; if(!r){toast('Apólice não encontrada');return;}
       S.res={step:'revisao',tipo:r.tipo||'',ocup:'',perfil:'',cep:r.cep||'',email:S.userEmail||'',cpf:S.userCpf||'',wa:S.userPhone||'',elig:{compart:'nao',construcao:'nao',rural:'nao'},modalidade:r.modalidade,lmi:r.lmi,vig:r.vig,cobs:{},quest:{solar:false,sin:false,prot:[]},franquia:r.franquia,assist:r.assist,pet:r.pet};
