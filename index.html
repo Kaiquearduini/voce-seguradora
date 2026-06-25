@@ -241,9 +241,9 @@ let SB=null;
 
 let _homeFetched=false;
 
-async function authSignUp({nome,email,telefone,senha}){
+async function authSignUp({nome,email,telefone,cpf,senha}){
   if(!SB)return{error:{message:'failed to fetch'}};
-  return await SB.auth.signUp({email,password:senha,options:{data:{nome:nome,telefone:telefone||''}}});
+  return await SB.auth.signUp({email,password:senha,options:{data:{nome:nome,telefone:telefone||'',cpf:cpf||''}}});
 }
 async function authLogin({email,senha}){
   if(!SB)return{error:{message:'failed to fetch'}};
@@ -329,16 +329,37 @@ function faceScan(cb){
   setTimeout(()=>{try{ov.remove();}catch(e){} cb&&cb();},1300);
 }
 function _digits(x){ return (x||'').replace(/\D/g,''); }
-function _matchPending(x,email,cpf){ email=(email||'').toLowerCase(); cpf=_digits(cpf); return !!((email&&(x.email||'')===email)||(cpf&&x.cpf&&_digits(x.cpf)===cpf)); }
+function _matchPending(x,email,cpf,phone){
+  email=(email||'').toLowerCase(); cpf=_digits(cpf); phone=_digits(phone);
+  if(email&&(x.email||'')===email)return true;
+  if(cpf&&cpf.length>=11&&x.cpf&&_digits(x.cpf)===cpf)return true;
+  if(phone&&phone.length>=10&&x.phone&&_digits(x.phone)===phone)return true;
+  return false;
+}
 function addPendingPolicy(email,cpf,pol){ const a=_readPending(); a.push({email:(email||'').toLowerCase(),cpf:_digits(cpf),pol:pol,status:'paga',ts:Date.now()}); _writePending(a); }
-function addPendingQuote(email,cpf,q){ const a=_readPending(); a.push({email:(email||'').toLowerCase(),cpf:_digits(cpf),status:'cotacao',prod:q.prod,plan:q.plan||'mensal',form:q.form||{},snap:q.snap||{},ts:Date.now()}); _writePending(a); }
-function pendingQuotesFor(email,cpf){ return _readPending().filter(x=>x.status==='cotacao'&&_matchPending(x,email,cpf)); }
+function addPendingQuote(email,cpf,phone,q){ const a=_readPending(); a.push({email:(email||'').toLowerCase(),cpf:_digits(cpf),phone:_digits(phone),status:'cotacao',prod:q.prod,plan:q.plan||'mensal',form:q.form||{},snap:q.snap||{},ts:Date.now()}); _writePending(a); }
+function pendingQuotesFor(email,cpf,phone){ return _readPending().filter(x=>x.status==='cotacao'&&_matchPending(x,email,cpf,phone)); }
 function removePendingQuote(ts){ try{_writePending(_readPending().filter(x=>String(x.ts)!==String(ts)));}catch(e){} }
-async function claimPendingPolicies(email,cpf){
+async function claimPendingPolicies(email,cpf,phone){
   const a=_readPending(); if(!a.length)return;
-  const paid=a.filter(x=>x.status!=='cotacao'&&_matchPending(x,email,cpf));
+  const paid=a.filter(x=>x.status!=='cotacao'&&_matchPending(x,email,cpf,phone));
   for(const it of paid){ try{await savePolicy(it.pol);}catch(e){} }
-  _writePending(a.filter(x=>!(x.status!=='cotacao'&&_matchPending(x,email,cpf))));
+  _writePending(a.filter(x=>!(x.status!=='cotacao'&&_matchPending(x,email,cpf,phone))));
+}
+function saveGuestQuote(){
+  try{
+    if(!S.prod)return;
+    const p=gP();const pr=p.price;
+    const price=(S.plan==='mensal'?pr.m:pr.a)+'/mês';
+    const item=S.form.modelo||S.form.placa||S.form.beneficiario||S.form.banco_emp||p.name;
+    const d=new Date(Date.now()+7*864e5);
+    const validade=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+    const snap={type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov,validade:validade,planLabel:S.plan==='mensal'?'Mensal':'Anual'};
+    // evita duplicar a mesma cotação (mesmo produto + mesmo CPF/telefone)
+    const cpf=_digits(S.form.cpf), ph=_digits(S.form.wa);
+    _writePending(_readPending().filter(x=>!(x.status==='cotacao'&&x.prod===S.prod&&((cpf&&_digits(x.cpf)===cpf)||(ph&&_digits(x.phone)===ph)))));
+    addPendingQuote(S.form.email||'', S.form.cpf||'', S.form.wa||'', {prod:S.prod,plan:S.plan,form:Object.assign({},S.form),snap:snap});
+  }catch(e){}
 }
 function _pendCard(q){
   const s=q.snap||{};
@@ -369,7 +390,11 @@ function _pendCard(q){
   </div>`;
 }
 function pendingQuotesHTML(){
-  let list=[]; try{ list=pendingQuotesFor(S.userEmail||'', (S.profile&&S.profile.cpf)||''); }catch(e){}
+  let list=[]; try{
+    const cpf=(S.profile&&S.profile.cpf)||S.userCpf||'';
+    const phone=S.userPhone||(S.profile&&S.profile.telefone)||'';
+    list=pendingQuotesFor(S.userEmail||'', cpf, phone);
+  }catch(e){}
   if(!list.length)return '';
   const cards=list.sort((a,b)=>b.ts-a.ts).map(_pendCard).join('');
   return `<div style="margin-bottom:24px"><div style="font-size:17px;font-weight:800;color:var(--txt1);letter-spacing:-.02em;margin-bottom:14px">Minhas cotações</div>${cards}</div>`;
@@ -442,7 +467,7 @@ async function saveProfile(fields){
 let _contaFetched=false;
 function refreshConta(){
   if(_contaFetched)return;_contaFetched=true;
-  fetchProfile().then(p=>{ if(p){applyProfile(p); if(S.scr==='conta')goTo('conta',rConta());} });
+  fetchProfile().then(p=>{ if(p){applyProfile(p); if(S.scr==='conta')goTo('conta',rConta()); if(S.scr==='home')goTo('home',rHome());} });
 }
 function mapRowToCard(r){
   let icon='shield';
@@ -771,6 +796,7 @@ function rCadastro(){
     </div>
     ${iw('NOME COMPLETO','cad-nome','Seu nome')}
     ${iw('E-MAIL','cad-email','voce@email.com','email','email')}
+    ${iw('CPF','cad-cpf','000.000.000-00','tel','numeric')}
     ${iw('CELULAR (opcional)','cad-tel','(11) 99999-9999','tel','numeric')}
     ${iw('SENHA','cad-senha','Mínimo 6 caracteres','password','text')}
     <div id="cad-erro" style="font-size:13px;color:#ff6b6b;min-height:18px;margin:4px 2px 8px;line-height:1.4"></div>
@@ -1039,6 +1065,7 @@ function rCats(){
   }).join('');
   return`<div class="scr" style="background:var(--navy)">
 ${sb(true)}
+${nb({back:S.authed?'go-home':'go-splash',d:true,cancel:false})}
 <div style="padding:4px 24px 20px;flex-shrink:0">
   <div style="font-size:11px;font-weight:700;color:rgba(70,239,128,.6);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Nova cotação</div>
   <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.2;margin-bottom:6px">O que deseja<br>proteger?</div>
@@ -1212,34 +1239,8 @@ ${nb({back:'go-cats',d:false,cancel:true})}
   </div>
 </div>
 <div style="padding:0 24px 48px;flex-shrink:0">
-  <button class="btn btn-neon" data-a="${S.authed?'go-termos':'go-identify'}" style="margin-bottom:12px">Contratar agora</button>
+  <button class="btn btn-neon" data-a="go-termos" style="margin-bottom:12px">Contratar agora</button>
   <div style="text-align:center;font-size:13px;color:var(--txt3);font-weight:500">Cancelamento fácil · Sem burocracia</div>
-</div>
-</div>`}
-
-// IDENTIFICAÇÃO (visitante sem conta) — captura a cotação antes de pagar
-function rIdentify(){
-  const p=gP();const pr=p.price;
-  const price=(S.plan==='mensal'?pr.m:pr.a)+'/mês';
-  return`<div class="scr" style="background:var(--surf);overflow-y:auto">
-${sb(false)}
-${nb({back:'go-result',d:false,cancel:true})}
-<div style="padding:8px 24px 0;flex-shrink:0">
-  <div style="font-size:24px;font-weight:800;color:var(--txt1);letter-spacing:-.02em;line-height:1.2">Quase lá!</div>
-  <div style="font-size:14px;color:var(--txt2);margin-top:8px;line-height:1.55">Informe seus dados para continuar. Assim sua cotação fica <b>salva</b> — se você não finalizar agora, é só entrar depois com o mesmo e-mail ou CPF que ela estará aqui esperando. 😊</div>
-</div>
-<div style="padding:22px 24px 0">
-  <div style="background:#fff;border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px;margin-bottom:22px">
-    <div style="width:42px;height:42px;border-radius:12px;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(p.icon,22,'#002430')}</div>
-    <div style="flex:1"><div style="font-size:13px;color:var(--txt2)">${p.name}</div><div style="font-size:15px;font-weight:800;color:var(--txt1)">${price} · ${S.plan==='mensal'?'Mensal':'Anual'}</div></div>
-  </div>
-  <div class="iw" style="margin-bottom:14px"><div class="ilbl">E-MAIL</div><input class="inp" id="id-email" type="email" inputmode="email" placeholder="voce@email.com" autocomplete="email"></div>
-  <div class="iw" style="margin-bottom:14px"><div class="ilbl">CPF</div><input class="inp" id="id-cpf" type="tel" inputmode="numeric" placeholder="000.000.000-00" autocomplete="off"></div>
-  <div id="id-erro" style="font-size:13px;min-height:18px;margin-bottom:6px;line-height:1.4"></div>
-</div>
-<div style="padding:0 24px 40px;flex-shrink:0">
-  <button class="btn btn-neon" id="btn-identify" style="margin-bottom:10px">Continuar para contratação</button>
-  <div style="display:flex;align-items:center;gap:8px;justify-content:center"><div>${ico('lock',15,'#279989')}</div><div style="text-align:center;font-size:12px;color:var(--txt3)">Seus dados são protegidos. Regulada pela SUSEP.</div></div>
 </div>
 </div>`}
 
@@ -1956,7 +1957,6 @@ function nav(id){
     case 'pay-error':  goTo('pay-error',rPayError()); break;
     case 'cats':       goTo('cats',rCats()); break;
     case 'result':     goTo('result',rResult()); break;
-    case 'identify':   goTo('identify',rIdentify()); break;
     case 'payment':    goTo('payment',rPayment()); break;
     case 'pay-pix':    goTo('pay-pix',rPayPix()); break;
     case 'pay-card':   goTo('pay-card',rPayCard()); break;
@@ -2025,7 +2025,7 @@ function bind(el){
       btnDel.textContent='Processando...';btnDel.disabled=true;
       await deleteAccountData();
       await authLogout();
-      S.authed=false;S.policies=[];S.form={};S.profile=null;S.chat=null;S.userEmail=null;_homeFetched=false;_contaFetched=false;try{localStorage.removeItem('vs_chat');}catch(e){}
+      S.authed=false;S.policies=[];S.form={};S.profile=null;S.chat=null;S.userEmail=null;S.userCpf=null;S.userPhone=null;_homeFetched=false;_contaFetched=false;try{localStorage.removeItem('vs_chat');}catch(e){}
       nav('splash');
       setTimeout(()=>toast('Pedido de exclusão registrado.'),400);
     });
@@ -2193,31 +2193,8 @@ function bind(el){
     });
   }
 
-  // ── IDENTIFICAÇÃO (visitante sem conta) → salva cotação pendente ──
-  const btnId=el.querySelector('#btn-identify');
-  if(btnId){
-    const idErro=el.querySelector('#id-erro');
-    const idCpf=el.querySelector('#id-cpf');
-    if(idCpf)idCpf.addEventListener('input',()=>{let x=idCpf.value.replace(/\D/g,'').slice(0,11);x=x.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');idCpf.value=x;});
-    btnId.addEventListener('click',()=>{
-      const email=(el.querySelector('#id-email')?.value||'').trim().toLowerCase();
-      const cpf=(idCpf?.value||'').trim();
-      if(!emailValido(email)){if(idErro){idErro.style.color='#ff6b6b';idErro.textContent='Digite um e-mail válido.';}return;}
-      if(_digits(cpf).length!==11){if(idErro){idErro.style.color='#ff6b6b';idErro.textContent='Digite um CPF válido (11 dígitos).';}return;}
-      if(S.prod){
-        const p=gP();const pr=p.price;
-        const price=(S.plan==='mensal'?pr.m:pr.a)+'/mês';
-        const item=S.form.modelo||S.form.placa||S.form.beneficiario||S.form.banco_emp||p.name;
-        const d=new Date(Date.now()+7*864e5);
-        const validade=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
-        const snap={type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov,validade:validade,planLabel:S.plan==='mensal'?'Mensal':'Anual'};
-        addPendingQuote(email,cpf,{prod:S.prod,plan:S.plan,form:Object.assign({},S.form),snap:snap});
-      }
-      S.guestEmail=email; S.guestCpf=cpf;
-      nav('termos');
-    });
-  }
-
+  // ── SINISTRO: data + anexos ──
+  const sinData=el.querySelector('#sin-data');
   if(sinData)sinData.addEventListener('input',()=>{sinData.value=maskData(sinData.value);});
   const upArea=el.querySelector('#upload-area');
   const sinFile=el.querySelector('#sin-file');
@@ -2246,8 +2223,10 @@ function bind(el){
       if(error){if(loginErro)loginErro.textContent=traduzErro(error.message);btnLogin.disabled=false;btnLogin.textContent=old;return;}
       S.authed=true;
       S.userEmail=email.toLowerCase();
-      S.form.name=data?.user?.user_metadata?.nome||email.split('@')[0];
-      await claimPendingPolicies(email,(S.profile&&S.profile.cpf)||(data?.user?.user_metadata?.cpf)||'');
+      const _md=data?.user?.user_metadata||{};
+      S.userCpf=_digits(_md.cpf); S.userPhone=_digits(_md.telefone);
+      S.form.name=_md.nome||email.split('@')[0];
+      await claimPendingPolicies(email,_md.cpf||'',_md.telefone||'');
       if(bioSupported() && !faceidOn()){ S._fidEmail=email; nav('faceid-prompt'); }
       else nav('home');
     };
@@ -2256,7 +2235,7 @@ function bind(el){
       if(faceidOn()){
         const u=await currentUser();
         faceScan(async()=>{
-          if(u){ S.authed=true; S.userEmail=(u.email||'').toLowerCase(); nav('home'); return; }
+          if(u){ S.authed=true; S.userEmail=(u.email||'').toLowerCase(); const m=u.user_metadata||{}; S.userCpf=_digits(m.cpf); S.userPhone=_digits(m.telefone); nav('home'); return; }
           // Não reconheceu → cai para e-mail e senha
           const email=(loginEmail.value||'').trim();
           const senha=loginSenha?.value||'';
@@ -2275,20 +2254,24 @@ function bind(el){
   const btnCad=el.querySelector('#btn-cadastro');
   if(btnCad){
     const cadErro=el.querySelector('#cad-erro');
+    const cadCpf=el.querySelector('#cad-cpf');
+    if(cadCpf)cadCpf.addEventListener('input',()=>{let x=cadCpf.value.replace(/\D/g,'').slice(0,11);x=x.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');cadCpf.value=x;});
     btnCad.addEventListener('click',async()=>{
       const nome=(el.querySelector('#cad-nome')?.value||'').trim();
       const email=(el.querySelector('#cad-email')?.value||'').trim();
+      const cpf=(el.querySelector('#cad-cpf')?.value||'').trim();
       const telefone=(el.querySelector('#cad-tel')?.value||'').trim();
       const senha=el.querySelector('#cad-senha')?.value||'';
       if(!nome||!email||!senha){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent='Preencha nome, e-mail e senha.';}return;}
       if(!emailValido(email)){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent='Digite um e-mail válido.';}return;}
+      if(cpf&&_digits(cpf).length!==11){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent='CPF inválido. Confira os números.';}return;}
       if(senha.length<6){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent='A senha precisa ter ao menos 6 caracteres.';}return;}
       btnCad.disabled=true;const old=btnCad.textContent;btnCad.textContent='Criando...';
       if(cadErro)cadErro.textContent='';
-      const {data,error}=await authSignUp({nome,email,telefone,senha});
+      const {data,error}=await authSignUp({nome,email,telefone,cpf,senha});
       if(error){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent=traduzErro(error.message);}btnCad.disabled=false;btnCad.textContent=old;return;}
-      S.form.name=nome;
-      if(data?.session){ S.authed=true; S.userEmail=email.toLowerCase(); await claimPendingPolicies(email,(S.profile&&S.profile.cpf)||''); nav('home'); }
+      S.form.name=nome; S.userCpf=_digits(cpf); S.userPhone=_digits(telefone); if(cpf)S.form.cpf=cpf;
+      if(data?.session){ S.authed=true; S.userEmail=email.toLowerCase(); await claimPendingPolicies(email,cpf,telefone); nav('home'); }
       else{
         btnCad.textContent='✓ Conta criada!';
         if(cadErro){cadErro.style.color='#46EF80';cadErro.textContent='Conta criada! Verifique seu e-mail para confirmar e depois faça login.';}
@@ -2396,7 +2379,7 @@ function bind(el){
     else if(a==='go-cats')nav('cats');
     else if(a==='go-result')nav('result');
     else if(a==='go-payment')nav('payment');
-    else if(a==='go-termos')nav('termos');
+    else if(a==='go-termos'){ if(!S.authed)saveGuestQuote(); nav('termos'); }
     else if(a==='go-apolice')nav('apolice');
     else if(a==='go-sinistro')nav('sinistro');
     else if(a==='go-sinistro-detalhe')nav('sinistro-detalhe');
@@ -2427,7 +2410,6 @@ function bind(el){
       nav('home');
     }
     else if(a==='go-success')nav('success');
-    else if(a==='go-identify')nav('identify');
     else if(a==='ativar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; nav('payment'); } }
     else if(a==='alterar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; nav('result'); } }
     else if(a==='sel-cat'||a==='noop'){}
@@ -2439,7 +2421,7 @@ function bind(el){
       b.textContent='✓ Link copiado!';b.style.background='#279989';
       setTimeout(()=>{b.textContent='Copiar meu link de indicação';b.style.background='';},2200);
     }
-    else if(a==='sair'){ await authLogout(); S.authed=false; S.policies=[]; S.form={}; S.profile=null; S.chat=null; S.userEmail=null; _homeFetched=false; _contaFetched=false; try{localStorage.removeItem('vs_chat');}catch(e){} nav('splash'); }
+    else if(a==='sair'){ await authLogout(); S.authed=false; S.policies=[]; S.form={}; S.profile=null; S.chat=null; S.userEmail=null; S.userCpf=null; S.userPhone=null; _homeFetched=false; _contaFetched=false; try{localStorage.removeItem('vs_chat');}catch(e){} nav('splash'); }
     else if(a==='how-ref'||a.startsWith('share-')||a.startsWith('menu-')||a==='complete-profile'){ toast('Em breve 🙂'); }
   }));
 
@@ -2550,7 +2532,7 @@ document.addEventListener('pointerdown',function(e){
 if(SB){
   // link de recuperação de senha (vindo do e-mail) abre a tela de redefinição
   SB.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ S.recovery=true; nav('reset-password'); } });
-  SB.auth.getSession().then(({data})=>{ if(data&&data.session){ S.authed=true; const u=data.session.user; if(u){S.userEmail=(u.email||'').toLowerCase(); if(u.user_metadata)applyProfile(u.user_metadata);} } }).catch(()=>{});
+  SB.auth.getSession().then(({data})=>{ if(data&&data.session){ S.authed=true; const u=data.session.user; if(u){S.userEmail=(u.email||'').toLowerCase(); const m=u.user_metadata||{}; S.userCpf=_digits(m.cpf); S.userPhone=_digits(m.telefone); if(u.user_metadata)applyProfile(u.user_metadata);} } }).catch(()=>{});
 }
 nav('splash');
 </script>
