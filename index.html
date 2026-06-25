@@ -181,6 +181,34 @@ body{background:#0e1e27;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Dis
 .skel{background:linear-gradient(90deg,rgba(0,36,48,.06) 25%,rgba(0,36,48,.12) 50%,rgba(0,36,48,.06) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px}
 .skel-dark{background:linear-gradient(90deg,rgba(255,255,255,.06) 25%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.06) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px}
 </style>
+<style id="polish">
+/* ===== Camada de polimento (UX) ===== */
+.btn{position:relative;overflow:hidden}
+.btn:active{transform:scale(.975)}
+.btn-neon:active{box-shadow:0 1px 6px rgba(70,239,128,.18)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+/* efeito ripple ao toque */
+.rpl{position:absolute;border-radius:50%;transform:scale(0);background:rgba(255,255,255,.35);pointer-events:none;animation:rpl .55s ease-out}
+.btn-neon .rpl{background:rgba(0,36,48,.18)}
+@keyframes rpl{to{transform:scale(2.6);opacity:0}}
+/* foco acessível e brilho nos inputs */
+.inp:focus{border-color:rgba(70,239,128,.6)!important;box-shadow:0 0 0 3px rgba(70,239,128,.12)}
+button:focus-visible,a:focus-visible,.inp:focus-visible{outline:2px solid rgba(70,239,128,.7);outline-offset:2px}
+/* transição de tela um pouco mais suave */
+.scr{transition:opacity .26s ease,transform .30s cubic-bezier(.22,.61,.36,1)}
+.scr.out{opacity:0;transform:translateX(-28px);pointer-events:none}
+/* barra de abas: item ativo com leve realce */
+.ti{transition:transform .15s ease}
+.ti:active{transform:scale(.92)}
+.ti.active .ti-ico{transform:translateY(-1px)}
+/* cartões tocáveis: feedback consistente */
+.pol-card:active,[data-cid]:active,[data-pid]:active{transform:scale(.985)}
+/* skeleton shimmer reutilizável */
+.skel{background:linear-gradient(90deg,rgba(0,36,48,.06) 25%,rgba(0,36,48,.12) 37%,rgba(0,36,48,.06) 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite;border-radius:12px}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+/* respeita quem prefere menos animação */
+@media (prefers-reduced-motion: reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
 </head>
 <body>
 <div id="app" class="phone"></div>
@@ -229,6 +257,25 @@ async function saveClaim(c){
   try{const u=await currentUser();if(!u)return;
     await SB.from('claims').insert({user_id:u.id,tipo:c.tipo,descricao:c.descricao||'',status:'em análise'});
   }catch(e){console.warn('Falha ao salvar sinistro:',e);}
+}
+async function changePassword(email, atual, nova){
+  if(!SB)return{error:{message:'failed to fetch'}};
+  try{
+    const {error:e1}=await SB.auth.signInWithPassword({email:email,password:atual});
+    if(e1)return{error:{message:'senha atual incorreta'}};
+    const {error:e2}=await SB.auth.updateUser({password:nova});
+    return {error:e2};
+  }catch(e){return {error:{message:String((e&&e.message)||e)}};}
+}
+async function sendReset(email){
+  if(!SB)return{error:{message:'failed to fetch'}};
+  try{ return await SB.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname}); }
+  catch(e){return {error:{message:String((e&&e.message)||e)}};}
+}
+async function setNewPassword(nova){
+  if(!SB)return{error:{message:'failed to fetch'}};
+  try{ return await SB.auth.updateUser({password:nova}); }
+  catch(e){return {error:{message:String((e&&e.message)||e)}};}
 }
 function toast(msg){
   let t=document.getElementById('vs-toast');
@@ -613,9 +660,10 @@ function rLogin(){
       <input class="inp" id="login-senha" type="password" placeholder="••••••••" autocomplete="current-password" style="font-size:18px">
     </div>
     <div id="login-erro" style="font-size:13px;color:#ff6b6b;min-height:18px;margin:6px 2px 0;line-height:1.4"></div>
+    <div style="text-align:right;margin:-2px 2px 6px"><span data-a="go-forgot-password" style="font-size:13px;color:rgba(70,239,128,.85);font-weight:600;cursor:pointer">Esqueci minha senha</span></div>
     <button class="btn btn-neon" id="btn-login" style="margin-top:4px">Entrar</button>
     <button class="btn btn-ghost" data-a="go-cadastro" style="margin-top:10px">Criar uma conta</button>
-    <button data-a="go-cats" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,.5);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Fazer cotação sem conta</button>
+    <button class="btn btn-neon" data-a="go-cats" style="margin-top:10px">Fazer cotação sem conta</button>
   </div>
   <div style="padding:0 28px 48px;position:relative;z-index:1;text-align:center">
     <div style="font-size:11px;color:rgba(255,255,255,.25);line-height:1.6">Autorizada pela SUSEP · Registro nº 10.001.234-5<br>Seus dados são protegidos pela LGPD</div>
@@ -1417,6 +1465,7 @@ ${sb(false)}
   <div style="margin:0 16px 16px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
     <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.1em;padding:14px 20px 4px;text-transform:uppercase">AJUDA</div>
     ${row('bolt','Dúvidas frequentes','Pergunte ao assistente','go-chat')}
+    ${row('lock','Alterar senha','Trocar sua senha de acesso','go-change-password')}
     <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;border-bottom:1px solid #f0f2f5" data-a="go-chat">
       <div style="width:32px;height:32px;border-radius:10px;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico('family',17,'#002430')}</div>
       <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--txt1)">Converse no chat</div><div style="font-size:12px;color:var(--txt3);margin-top:1px">Tire dúvidas sobre seguros</div></div>
@@ -1542,6 +1591,54 @@ function rDeleteAccount(){
     <div style="font-size:14px;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:32px">Esta ação solicita a remoção da sua conta e dos seus dados (apólices, sinistros e perfil). Apólices ativas precisam ser canceladas antes. Esta ação não pode ser desfeita.</div>
     <button class="btn" id="btn-confirm-delete" style="background:#dc2626;color:#fff;margin-bottom:12px">Confirmar exclusão</button>
     <button class="btn btn-ghost" data-a="go-conta">Cancelar</button>
+  </div>
+</div>`}
+
+// SENHA — alterar / recuperar / redefinir
+function rChangePassword(){
+  return`<div class="scr" style="background:var(--navy);overflow:hidden">
+  ${sb(true)}
+  ${nb({back:'go-conta',d:true,cancel:false,title:'Alterar senha'})}
+  <div class="scrl" style="padding:8px 28px 40px;position:relative;z-index:1">
+    <div style="margin:6px 0 22px">
+      <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px">Alterar senha</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.45)">Confirme a senha atual e defina uma nova.</div>
+    </div>
+    <div class="iw" style="margin-bottom:12px"><div class="ilbl">SENHA ATUAL</div><input class="inp" id="cp-atual" type="password" placeholder="••••••••"></div>
+    <div class="iw" style="margin-bottom:12px"><div class="ilbl">NOVA SENHA</div><input class="inp" id="cp-nova" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="iw" style="margin-bottom:8px"><div class="ilbl">CONFIRMAR NOVA SENHA</div><input class="inp" id="cp-conf" type="password" placeholder="Repita a nova senha"></div>
+    <div id="cp-msg" style="font-size:13px;min-height:18px;margin:6px 2px 8px;line-height:1.4"></div>
+    <button class="btn btn-neon" id="btn-changepass">Salvar nova senha</button>
+  </div>
+</div>`}
+function rForgotPassword(){
+  return`<div class="scr" style="background:var(--navy);overflow:hidden">
+  ${sb(true)}
+  ${nb({back:'go-login',d:true,cancel:false,title:'Recuperar senha'})}
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px;position:relative;z-index:1">
+    <div style="margin-bottom:26px">
+      <div style="width:56px;height:56px;border-radius:18px;background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">${ico('lock',26,'#46EF80')}</div>
+      <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:8px">Esqueceu a senha?</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.45);line-height:1.5">Digite seu e-mail e enviaremos um link para você criar uma nova senha.</div>
+    </div>
+    <div class="iw" style="margin-bottom:8px"><div class="ilbl">E-MAIL</div><input class="inp" id="fp-email" type="email" inputmode="email" placeholder="voce@email.com" style="font-size:18px"></div>
+    <div id="fp-msg" style="font-size:13px;min-height:18px;margin:6px 2px;line-height:1.4"></div>
+    <button class="btn btn-neon" id="btn-forgot">Enviar link de recuperação</button>
+  </div>
+</div>`}
+function rResetPassword(){
+  return`<div class="scr" style="background:var(--navy);overflow:hidden">
+  ${sb(true)}
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px;position:relative;z-index:1">
+    <div style="margin-bottom:24px">
+      <div style="width:56px;height:56px;border-radius:18px;background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px">${ico('shield',26,'#46EF80')}</div>
+      <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:8px">Criar nova senha</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.45)">Defina sua nova senha de acesso.</div>
+    </div>
+    <div class="iw" style="margin-bottom:12px"><div class="ilbl">NOVA SENHA</div><input class="inp" id="rp-nova" type="password" placeholder="Mínimo 6 caracteres" style="font-size:18px"></div>
+    <div class="iw" style="margin-bottom:8px"><div class="ilbl">CONFIRMAR SENHA</div><input class="inp" id="rp-conf" type="password" placeholder="Repita a senha" style="font-size:18px"></div>
+    <div id="rp-msg" style="font-size:13px;min-height:18px;margin:6px 2px;line-height:1.4"></div>
+    <button class="btn btn-neon" id="btn-resetpass">Salvar nova senha</button>
   </div>
 </div>`}
 
@@ -1679,6 +1776,9 @@ function nav(id){
     case 'privacy':    goTo('privacy',rPrivacy()); break;
     case 'terms':      goTo('terms',rTerms()); break;
     case 'delete-account': goTo('delete-account',rDeleteAccount()); break;
+    case 'change-password': goTo('change-password',rChangePassword()); break;
+    case 'forgot-password': goTo('forgot-password',rForgotPassword()); break;
+    case 'reset-password':  goTo('reset-password',rResetPassword()); break;
     case 'loading':    goTo('loading',rLoading()); startLoad(); break;
     default:
       if(id.startsWith('prods-'))goTo(id,rProds(id.slice(6)));
@@ -1730,6 +1830,64 @@ function bind(el){
       S.authed=false;S.policies=[];S.form={};S.profile=null;_homeFetched=false;_contaFetched=false;
       nav('splash');
       setTimeout(()=>toast('Pedido de exclusão registrado.'),400);
+    });
+  }
+
+  // ── ALTERAR SENHA (logado) ──
+  const btnCP=el.querySelector('#btn-changepass');
+  if(btnCP){
+    const m=el.querySelector('#cp-msg');
+    btnCP.addEventListener('click',async()=>{
+      const atual=el.querySelector('#cp-atual')?.value||'';
+      const nova=el.querySelector('#cp-nova')?.value||'';
+      const conf=el.querySelector('#cp-conf')?.value||'';
+      const err=t=>{if(m){m.style.color='#ff6b6b';m.textContent=t;}};
+      if(!atual||!nova){return err('Preencha a senha atual e a nova.');}
+      if(nova.length<6){return err('A nova senha precisa ter ao menos 6 caracteres.');}
+      if(nova!==conf){return err('A confirmação não confere com a nova senha.');}
+      const u=await currentUser();const email=u&&u.email;
+      if(!email){return err('Sessão expirada. Entre novamente.');}
+      btnCP.disabled=true;const old=btnCP.textContent;btnCP.textContent='Salvando...';if(m)m.textContent='';
+      const {error}=await changePassword(email,atual,nova);
+      if(error){err(error.message.includes('atual')?'Senha atual incorreta.':traduzErro(error.message));btnCP.disabled=false;btnCP.textContent=old;return;}
+      btnCP.textContent='✓ Senha alterada!';
+      if(m){m.style.color='#46EF80';m.textContent='Senha atualizada com sucesso.';}
+      setTimeout(()=>nav('conta'),1100);
+    });
+  }
+
+  // ── ESQUECI A SENHA (envia e-mail) ──
+  const btnFP=el.querySelector('#btn-forgot');
+  if(btnFP){
+    const m=el.querySelector('#fp-msg');
+    btnFP.addEventListener('click',async()=>{
+      const email=(el.querySelector('#fp-email')?.value||'').trim();
+      if(!emailValido(email)){if(m){m.style.color='#ff6b6b';m.textContent='Digite um e-mail válido.';}return;}
+      btnFP.disabled=true;const old=btnFP.textContent;btnFP.textContent='Enviando...';if(m)m.textContent='';
+      const {error}=await sendReset(email);
+      if(error){if(m){m.style.color='#ff6b6b';m.textContent=traduzErro(error.message);}btnFP.disabled=false;btnFP.textContent=old;return;}
+      btnFP.textContent='✓ Enviado!';
+      if(m){m.style.color='#46EF80';m.textContent='Se este e-mail tiver conta, enviamos um link para criar uma nova senha. Verifique sua caixa de entrada e o spam.';}
+    });
+  }
+
+  // ── REDEFINIR SENHA (após link do e-mail) ──
+  const btnRP=el.querySelector('#btn-resetpass');
+  if(btnRP){
+    const m=el.querySelector('#rp-msg');
+    btnRP.addEventListener('click',async()=>{
+      const nova=el.querySelector('#rp-nova')?.value||'';
+      const conf=el.querySelector('#rp-conf')?.value||'';
+      const err=t=>{if(m){m.style.color='#ff6b6b';m.textContent=t;}};
+      if(nova.length<6){return err('A senha precisa ter ao menos 6 caracteres.');}
+      if(nova!==conf){return err('As senhas não conferem.');}
+      btnRP.disabled=true;const old=btnRP.textContent;btnRP.textContent='Salvando...';if(m)m.textContent='';
+      const {error}=await setNewPassword(nova);
+      if(error){err(traduzErro(error.message));btnRP.disabled=false;btnRP.textContent=old;return;}
+      btnRP.textContent='✓ Senha redefinida!';
+      if(m){m.style.color='#46EF80';m.textContent='Pronto! Sua nova senha está ativa.';}
+      S.recovery=false;
+      setTimeout(()=>nav('home'),1100);
     });
   }
 
@@ -1960,6 +2118,8 @@ function bind(el){
     else if(a==='go-privacy')nav('privacy');
     else if(a==='go-terms')nav('terms');
     else if(a==='go-delete-account')nav('delete-account');
+    else if(a==='go-change-password')nav('change-password');
+    else if(a==='go-forgot-password')nav('forgot-password');
     else if(a==='soon')toast('Em breve 🙂');
     else if(a==='go-cats')nav('cats');
     else if(a==='go-result')nav('result');
@@ -2098,7 +2258,22 @@ function bind(el){
 }
 
 // Boot
-if(SB){SB.auth.getSession().then(({data})=>{ if(data&&data.session){ S.authed=true; const u=data.session.user; if(u&&u.user_metadata)applyProfile(u.user_metadata); } }).catch(()=>{});}
+// efeito ripple ao toque em botões
+document.addEventListener('pointerdown',function(e){
+  const b=e.target&&e.target.closest&&e.target.closest('.btn');
+  if(!b||b.disabled)return;
+  const r=document.createElement('span');r.className='rpl';
+  const rect=b.getBoundingClientRect();const size=Math.max(rect.width,rect.height);
+  r.style.width=r.style.height=size+'px';
+  r.style.left=(e.clientX-rect.left-size/2)+'px';
+  r.style.top=(e.clientY-rect.top-size/2)+'px';
+  b.appendChild(r);setTimeout(()=>{r.remove();},560);
+},{passive:true});
+if(SB){
+  // link de recuperação de senha (vindo do e-mail) abre a tela de redefinição
+  SB.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ S.recovery=true; nav('reset-password'); } });
+  SB.auth.getSession().then(({data})=>{ if(data&&data.session){ S.authed=true; const u=data.session.user; if(u&&u.user_metadata)applyProfile(u.user_metadata); } }).catch(()=>{});
+}
 nav('splash');
 </script>
 </body>
