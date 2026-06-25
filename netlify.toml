@@ -1,5 +1,9 @@
+# Configuração da Netlify — Você Seguradora
+# Libera o app para ser exibido DENTRO de outros sites (iframe/embed).
+# Usamos só o Content-Security-Policy (frame-ancestors), que é o mecanismo
+# moderno e correto — sem cabeçalhos antigos/ambíguos.
+
 [[headers]]
-     for = "/*"
-     [headers.values]
-       Content-Security-Policy = "frame-ancestors *"
-       X-Frame-Options = "ALLOWALL"
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "frame-ancestors *"
