@@ -1,0 +1,2105 @@
+
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  VOCÊ SEGURADORA — Protótipo funcional de alta fidelidade (web)
+  ----------------------------------------------------------------------------
+  NATUREZA: protótipo navegável de referência. NÃO é o app de produção que vai
+  às lojas — serve como especificação viva de fluxos, design e regras de negócio.
+  Veja backend/HANDOFF-TECNICO.md para a stack recomendada de produção
+  (Expo/React Native) e o plano de migração.
+
+  STACK ATUAL: HTML + CSS + JavaScript puro (sem build, sem dependências),
+  exceto o SDK do Supabase (auth + banco), carregado via CDN.
+
+  ONDE FICA CADA COISA (busque por estes marcadores no <script>):
+    - Configuração do backend ...... const SUPABASE_URL / SUPABASE_KEY
+    - Dados do app ................. CATS, PRODS, COVS, FC
+    - Estado ....................... const S
+    - Telas ........................ funções r*()  (rLogin, rHome, rChat, ...)
+    - Navegação .................... nav(), goTo()
+    - Eventos ...................... bind()
+
+  PONTOS QUE SÃO SOMENTE PROTÓTIPO (substituir em produção):
+    - Pagamentos (PIX/QR, boleto, cartão) são SIMULADOS (visuais). Integrar
+      gateway com tokenização (ex.: Mercado Pago / Pagar.me). NUNCA salvar
+      número completo de cartão ou CVV.
+    - O chat usa um bot por palavras-chave (botReply). Para IA generativa,
+      usar um proxy server-side (ex.: Edge Function) com a chave protegida.
+    - Cotação sem conta usa armazenamento local do navegador como ponte.
+    - Registro SUSEP e textos legais são fictícios (placeholder).
+  ============================================================================
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Você Seguradora</title>
+<style>
+:root{
+  color-scheme:light;
+  --navy:#002430;--neon:#46EF80;--teal:#279989;
+  --surf:#F2F7F9;--dark:#0D1B21;
+  --txt1:#0D1B21;--txt2:#4A6572;--txt3:#8FAABB;
+  /* legacy aliases — used throughout screens on dark backgrounds */
+  --muted:rgba(255,255,255,.4);
+  --gray:rgba(255,255,255,.55);
+  --border:rgba(0,36,48,.07);
+  --card-sh:0 2px 8px rgba(0,36,48,.06),0 8px 28px rgba(0,36,48,.05);
+  --white:#fff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:#0e1e27;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:32px 16px}
+.phone{width:390px;height:844px;background:var(--navy);border-radius:48px;overflow:hidden;position:relative;flex-shrink:0;
+  box-shadow:0 0 0 1px rgba(255,255,255,.04),0 0 0 10px #0b181f,0 0 0 11px rgba(0,0,0,.18),0 60px 120px rgba(0,0,0,.6),0 0 100px rgba(70,239,128,.08),inset 0 1px 0 rgba(255,255,255,.04)}
+@media(max-width:480px){body{padding:0;background:#0e1e27;align-items:flex-start}.phone{width:100%;height:100dvh;border-radius:0;box-shadow:none}}
+
+/* ── SCREEN SYSTEM ── */
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transform:translateX(44px);transition:opacity .24s ease,transform .24s cubic-bezier(.4,0,.2,1);will-change:transform,opacity;overflow:hidden}
+.scr.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.scr.out{opacity:0;transform:translateX(-44px);pointer-events:none}
+
+/* ── STATUS BAR ── */
+.sb{height:50px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sb-d .st{color:rgba(255,255,255,.92);font-size:15px;font-weight:700;letter-spacing:.01em}
+.sb-d .si{color:rgba(255,255,255,.55);font-size:11px;letter-spacing:.06em}
+.sb-l .st{color:rgba(0,0,0,.88);font-size:15px;font-weight:700;letter-spacing:.01em}
+.sb-l .si{color:rgba(0,0,0,.5);font-size:11px;letter-spacing:.04em}
+
+/* ── NAV BAR ── */
+.nb{height:56px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.nb-btn{width:38px;height:38px;border-radius:12px;border:none;cursor:pointer;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:transform .1s,opacity .1s}
+.nb-btn:active{transform:scale(.9);opacity:.7}
+.nb-d{background:rgba(255,255,255,.09);color:rgba(255,255,255,.9)}
+.nb-l{background:rgba(0,36,48,.06);color:var(--txt1)}
+.nb-cancel{font-size:14px;font-weight:600;background:none;border:none;cursor:pointer;font-family:inherit;color:var(--txt3);padding:8px 4px;letter-spacing:.01em}
+
+/* ── PROGRESS BAR ── */
+.prog{height:2px;margin:0 24px 24px;background:rgba(255,255,255,.07);border-radius:2px;flex-shrink:0;overflow:hidden}
+.prog-f{height:100%;background:linear-gradient(90deg,var(--teal),var(--neon));border-radius:2px;transition:width .45s cubic-bezier(.4,0,.2,1)}
+
+/* ── STEP DOTS ── */
+.step-dots{display:flex;gap:5px;align-items:center;padding:0 24px 22px;flex-shrink:0}
+.step-dot{height:3px;border-radius:2px;background:rgba(255,255,255,.12);transition:all .32s cubic-bezier(.4,0,.2,1)}
+.step-dot.done{background:rgba(70,239,128,.45)}
+.step-dot.cur{background:var(--neon);flex:2.5}
+
+/* ── BUTTONS ── */
+.btn{width:100%;height:56px;border-radius:16px;border:none;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.02em;transition:transform .12s,box-shadow .12s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{transform:scale(.965)}
+.btn:disabled{opacity:.25;cursor:not-allowed;transform:none!important}
+.btn-neon{background:var(--neon);color:var(--navy);box-shadow:0 4px 20px rgba(70,239,128,.3)}
+.btn-neon:active{box-shadow:0 2px 10px rgba(70,239,128,.2)}
+.btn-navy{background:var(--navy);color:var(--neon)}
+.btn-ol{background:transparent;border:1.5px solid rgba(70,239,128,.5);color:var(--neon);height:52px}
+.btn-ol-t{background:transparent;border:1.5px dashed rgba(39,153,137,.5);color:var(--teal);height:52px}
+.btn-ghost{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85);height:52px;border:1px solid rgba(255,255,255,.09)}
+
+/* ── INPUTS (dark) ── */
+.iw{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);border-radius:16px;padding:15px 20px;cursor:text;transition:all .22s}
+.iw:focus-within{border-color:var(--neon);background:rgba(70,239,128,.04);box-shadow:0 0 0 4px rgba(70,239,128,.07)}
+.ilbl{font-size:10px;font-weight:800;color:rgba(70,239,128,.7);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px}
+.inp{width:100%;background:none;border:none;outline:none;color:#fff;font-size:22px;font-weight:700;font-family:inherit;letter-spacing:-.01em}
+.inp::placeholder{color:rgba(255,255,255,.18);font-weight:400;font-size:17px;letter-spacing:0}
+
+/* ── SELECT OPTIONS ── */
+.opt{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 18px;cursor:pointer;transition:all .16s;position:relative}
+.opt:active{transform:scale(.985)}
+.opt.sel{border-color:var(--neon);background:rgba(70,239,128,.06);box-shadow:0 0 0 4px rgba(70,239,128,.05)}
+.opt-ico{width:46px;height:46px;border-radius:14px;background:rgba(70,239,128,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .16s}
+.opt.sel .opt-ico{background:rgba(70,239,128,.15)}
+.opt-ico svg{width:22px;height:22px;color:var(--neon)}
+.opt-info{flex:1}
+.opt-name{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.opt-sub{font-size:12px;color:rgba(255,255,255,.38);margin-top:3px;line-height:1.4}
+.opt-chk{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s}
+.opt.sel .opt-chk{background:var(--neon);border-color:var(--neon)}
+.opt-chki{font-size:11px;font-weight:900;color:var(--navy);display:none}
+.opt.sel .opt-chki{display:block}
+
+/* ── INFO CHIPS ── */
+.infr{display:flex;gap:11px;align-items:flex-start;padding:12px 14px;background:rgba(255,255,255,.035);border-radius:12px;border:1px solid rgba(255,255,255,.055)}
+.infd{width:5px;height:5px;border-radius:50%;background:var(--teal);flex-shrink:0;margin-top:7px}
+.inft{font-size:12.5px;color:rgba(255,255,255,.45);line-height:1.5}
+
+/* ── SCROLL ── */
+.scrl{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.scrl::-webkit-scrollbar{display:none}
+
+/* ── PLAN TOGGLE ── */
+.ptgl{display:flex;background:rgba(0,0,0,.18);border-radius:14px;padding:4px;gap:3px}
+.ptab{flex:1;height:42px;border-radius:10px;border:none;font-size:13px;font-weight:700;color:rgba(255,255,255,.45);cursor:pointer;font-family:inherit;transition:all .25s cubic-bezier(.16,1,.3,1);background:transparent;letter-spacing:.01em}
+.ptab.active{background:linear-gradient(135deg,#46EF80 0%,#279989 100%);color:#002430;box-shadow:0 2px 14px rgba(70,239,128,.35);}
+
+/* ── TAB BAR ── */
+.tbar{position:absolute;bottom:0;left:0;right:0;height:84px;background:rgba(255,255,255,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(0,36,48,.06);display:flex;padding:10px 4px 0}
+.ti{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:2px 0;transition:transform .14s}
+.ti:active{transform:scale(.88)}
+.ti-ico{width:24px;height:24px;transition:transform .22s}
+.ti.active .ti-ico{transform:scale(1.08)}
+.ti-lbl{font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.04em;text-transform:uppercase}
+.ti.active .ti-lbl{color:var(--teal)}
+.ti-pip{width:0;height:2.5px;border-radius:2px;background:linear-gradient(90deg,var(--neon),var(--teal));transition:width .25s cubic-bezier(.4,0,.2,1);margin-bottom:2px}
+.ti.active .ti-pip{width:20px}
+
+/* ── LIGHT CARDS ── */
+.card-w{background:#fff;border-radius:20px;overflow:hidden;box-shadow:var(--card-sh);border:1px solid var(--border)}
+.card-w-top{height:3px;background:linear-gradient(90deg,var(--neon) 0%,var(--teal) 100%)}
+
+/* ── POLICY CARD (new premium) ── */
+.pol-card{background:#fff;border-radius:20px;border:1px solid var(--border);box-shadow:var(--card-sh);overflow:hidden;margin-bottom:12px;transition:transform .14s}
+.pol-card:active{transform:scale(.985)}
+
+/* ── SECURITY BADGE ── */
+.sec-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(70,239,128,.08);border:1px solid rgba(70,239,128,.18);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:var(--neon);letter-spacing:.02em}
+
+/* ── PAYMENT CARD 3D ── */
+.pcard-scene{perspective:1200px;height:180px;margin:0 24px 24px}
+.pcard{width:100%;height:180px;position:relative;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.4,0,.2,1)}
+.pcard.flip{transform:rotateY(180deg)}
+.pcard-f,.pcard-b{position:absolute;inset:0;border-radius:22px;backface-visibility:hidden;padding:24px;display:flex;flex-direction:column}
+.pcard-f{background:linear-gradient(135deg,#002430 0%,#083548 55%,#002e3d 100%);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.pcard-b{background:linear-gradient(135deg,#083548 0%,#002430 100%);transform:rotateY(180deg);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+
+/* ── ANIMATIONS ── */
+@keyframes shieldIn{0%{transform:scale(0) rotate(-18deg);opacity:0}60%{transform:scale(1.1) rotate(3deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes fadeUp{from{transform:translateY(28px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideUpFull{from{transform:translateY(115%)}to{transform:translateY(0)}}
+@keyframes blobPulse{0%,100%{transform:scale(1) rotate(0deg);opacity:.8}33%{transform:scale(1.08) rotate(3deg)}66%{transform:scale(.94) rotate(-2deg);opacity:1}}
+@keyframes pulseGlow{0%,100%{filter:drop-shadow(0 0 18px rgba(70,239,128,.45));transform:scale(1)}50%{filter:drop-shadow(0 0 48px rgba(70,239,128,.8));transform:scale(1.04)}}
+@keyframes pulseD{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
+@keyframes checkIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes timerOut{from{stroke-dashoffset:0}to{stroke-dashoffset:251}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes particle{0%{transform:translate(0,0) scale(1);opacity:.85}100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.pg{animation:pulseGlow 2.8s ease-in-out infinite}
+.ci{animation:checkIn .5s cubic-bezier(.34,1.56,.64,1) both}
+
+.skel{background:linear-gradient(90deg,rgba(0,36,48,.06) 25%,rgba(0,36,48,.12) 50%,rgba(0,36,48,.06) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px}
+.skel-dark{background:linear-gradient(90deg,rgba(255,255,255,.06) 25%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.06) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px}
+</style>
+</head>
+<body>
+<div id="app" class="phone"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ===================== BACKEND (Supabase) =====================
+const SUPABASE_URL='https://fqmsylspnjxtwikfmqtz.supabase.co';
+const SUPABASE_KEY='sb_publishable_Md3S1XNW459hNYWuUgtwqQ_KBsWZ6k4';
+let SB=null;
+(function initSB(){
+  try{
+    let storage;
+    try{storage=window.localStorage;const k='__sbtest';storage.setItem(k,'1');storage.removeItem(k);}catch(e){storage=undefined;}
+    if(window.supabase&&window.supabase.createClient){
+      SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:!!storage,autoRefreshToken:true,storage:storage}});
+    }else{console.warn('SDK do Supabase não carregou.');}
+  }catch(e){console.warn('Falha ao iniciar Supabase:',e);}
+})();
+
+let _homeFetched=false;
+
+async function authSignUp({nome,email,telefone,senha}){
+  if(!SB)return{error:{message:'failed to fetch'}};
+  return await SB.auth.signUp({email,password:senha,options:{data:{nome:nome,telefone:telefone||''}}});
+}
+async function authLogin({email,senha}){
+  if(!SB)return{error:{message:'failed to fetch'}};
+  return await SB.auth.signInWithPassword({email,password:senha});
+}
+async function authLogout(){ try{ if(SB)await SB.auth.signOut(); }catch(e){} }
+async function currentUser(){ if(!SB)return null; try{const {data}=await SB.auth.getUser();return data?.user||null;}catch(e){return null;} }
+async function loadPolicies(){
+  if(!SB)return [];
+  try{const {data}=await SB.from('policies').select('*').order('created_at',{ascending:false});return data||[];}catch(e){return [];}
+}
+async function savePolicy(p){
+  if(!SB)return;
+  try{const u=await currentUser();if(!u)return;
+    const base={user_id:u.id,tipo:p.type,item:p.item,preco:p.price,cobertura:p.cov,status:'ativa'};
+    const {error}=await SB.from('policies').insert(Object.assign({},base,{pagamento:p.pagamento||null}));
+    if(error){ await SB.from('policies').insert(base); } // fallback se a coluna 'pagamento' ainda não existir
+  }catch(e){console.warn('Falha ao salvar apólice:',e);}
+}
+async function saveClaim(c){
+  if(!SB)return;
+  try{const u=await currentUser();if(!u)return;
+    await SB.from('claims').insert({user_id:u.id,tipo:c.tipo,descricao:c.descricao||'',status:'em análise'});
+  }catch(e){console.warn('Falha ao salvar sinistro:',e);}
+}
+function toast(msg){
+  let t=document.getElementById('vs-toast');
+  if(!t){t=document.createElement('div');t.id='vs-toast';t.style.cssText='position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(16px);background:#002430;color:#fff;padding:12px 18px;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 10px 34px rgba(0,0,0,.35);z-index:99999;opacity:0;transition:opacity .25s,transform .25s;max-width:78%;text-align:center;pointer-events:none';document.body.appendChild(t);}
+  t.textContent=msg;requestAnimationFrame(()=>{t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';});
+  clearTimeout(t._tm);t._tm=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(16px)';},2200);
+}
+function emailValido(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e||'');}
+function cpfValido(cpf){
+  cpf=(cpf||'').replace(/\D/g,'');
+  if(cpf.length!==11||/^(\d)\1{10}$/.test(cpf))return false;
+  let s=0;for(let i=0;i<9;i++)s+=parseInt(cpf[i],10)*(10-i);
+  let d1=11-(s%11);if(d1>=10)d1=0;if(d1!==parseInt(cpf[9],10))return false;
+  s=0;for(let i=0;i<10;i++)s+=parseInt(cpf[i],10)*(11-i);
+  let d2=11-(s%11);if(d2>=10)d2=0;return d2===parseInt(cpf[10],10);
+}
+async function deleteAccountData(){
+  if(!SB)return;
+  try{const u=await currentUser();if(!u)return;
+    // tenta remover os dados do usuário (requer policies de DELETE no RLS; é best-effort)
+    await SB.from('claims').delete().eq('user_id',u.id);
+    await SB.from('policies').delete().eq('user_id',u.id);
+  }catch(e){}
+}
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function htmlToNode(h){const w=document.createElement('div');w.innerHTML=h;return w.firstElementChild;}
+function _readPending(){ try{return JSON.parse(localStorage.getItem('vs_pending')||'[]');}catch(e){return [];} }
+function _writePending(a){ try{localStorage.setItem('vs_pending',JSON.stringify(a));}catch(e){} }
+function addPendingPolicy(email,cpf,pol){ const a=_readPending(); a.push({email:(email||'').toLowerCase(),cpf:cpf||'',pol:pol,ts:Date.now()}); _writePending(a); }
+async function claimPendingPolicies(email){
+  if(!email)return; email=email.toLowerCase();
+  const a=_readPending(); if(!a.length)return;
+  const mine=a.filter(x=>(x.email||'')===email);
+  const rest=a.filter(x=>(x.email||'')!==email);
+  for(const it of mine){ try{await savePolicy(it.pol);}catch(e){} }
+  _writePending(rest);
+}
+function _chatBubble(who,text){
+  if(who==='bot')return '<div style="display:flex;gap:8px;margin-bottom:14px;align-items:flex-end"><div style="width:30px;height:30px;border-radius:50%;background:rgba(70,239,128,.15);border:1px solid rgba(70,239,128,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ico('shield',16,'#46EF80')+'</div><div style="max-width:78%;background:#fff;border-radius:16px 16px 16px 4px;padding:12px 14px;font-size:14px;color:#0b1f27;line-height:1.55;box-shadow:0 1px 4px rgba(0,0,0,.06)">'+text+'</div></div>';
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><div style="max-width:80%;background:#002430;color:#fff;border-radius:16px 16px 4px 16px;padding:12px 14px;font-size:14px;line-height:1.5">'+text+'</div></div>';
+}
+function botReply(q){
+  const t=(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const has=(...ks)=>ks.some(k=>t.includes(k));
+  if(has('franquia'))return 'Franquia é o valor que você paga em caso de sinistro antes de a seguradora cobrir o restante. Ex.: num reparo de R$ 5.000 com franquia de R$ 1.500, você paga R$ 1.500 e a seguradora cobre R$ 3.500. Quanto menor a franquia, geralmente maior a mensalidade.';
+  if(has('cobertura','cobre','coberto'))return 'Cobertura é o conjunto de situações protegidas pela apólice (colisão, roubo, furto, incêndio, danos a terceiros, assistência 24h, etc.). Você vê a lista completa de cada seguro antes de contratar.';
+  if(has('sinistro','acidente','bati','roubaram','roubo','furto','quebrou','colis'))return 'Para abrir um sinistro: vá em "Minhas apólices" → abra a apólice → "Abrir sinistro". Você descreve o ocorrido, anexa fotos/documentos e recebe um protocolo para acompanhar. Prazo médio de análise: 2 dias úteis.';
+  if(has('cancelar','cancelamento','desistir'))return 'Você pode cancelar quando quiser, sem multa nos planos mensais. A cobertura segue ativa até o fim do período já pago.';
+  if(has('pagar','pagamento','pix','boleto','cartao','parcel'))return 'Aceitamos PIX (na hora), cartão de crédito (parcelável) e boleto (vence em 3 dias úteis). Assim que o pagamento é confirmado, a apólice é ativada automaticamente.';
+  if(has('carencia','prazo'))return 'Carência é o tempo entre a contratação e o início de certas coberturas. Em geral: 0 dias para colisão e até 30 dias para alguns eventos naturais. O detalhe fica nas condições gerais de cada produto.';
+  if(has('contratar','cotar','cotacao','fazer seguro','quero um seguro'))return 'É rápido: na tela inicial toque em "+ Contratar novo seguro", escolha a categoria e o produto, responda algumas perguntas e veja o preço na hora. Quer saber quais tipos de seguro temos?';
+  if(has('tipos','quais seguro','produtos','oferecem','o que voces'))return 'Temos seguros de Automóvel, Moto, Celular, Casa/Residencial, Vida, Acidentes Pessoais, Pet e proteções financeiras. Toque em "Contratar novo seguro" para ver todos com preços.';
+  if(has('preco','valor','quanto custa','quanto fica','mensalidade'))return 'O preço depende do produto e do seu perfil. O melhor é fazer uma cotação rápida (toque em "Contratar novo seguro") — leva menos de 1 minuto e sem compromisso.';
+  if(has('documento','rg','cnh','preciso'))return 'Para contratar, basicamente CPF e alguns dados do item segurado. Para sinistros, pode ser pedido documento com foto e comprovantes (notas, B.O.) — sempre avisamos na hora.';
+  if(has('reembolso','indeniza','quando recebo'))return 'Após a aprovação do sinistro, a indenização é paga conforme as condições da apólice. Você acompanha cada etapa pelo protocolo, dentro do app.';
+  if(has('humano','atendente','pessoa','suporte','reclama'))return 'Posso resolver a maioria das dúvidas por aqui. Para atendimento humano, use a Central de sinistros na aba Conta — um atendente assume em horário comercial.';
+  if(has('oi','ola','bom dia','boa tarde','boa noite','eai','opa','hello'))return 'Olá! Como posso ajudar com seu seguro hoje? Posso falar sobre coberturas, franquia, sinistros, pagamento, carência e contratação.';
+  if(has('obrigad','valeu','vlw','thanks'))return 'Por nada! 😊 Qualquer outra dúvida sobre seguros, é só chamar.';
+  return 'Posso ajudar com: o que é franquia, coberturas, como abrir um sinistro, formas de pagamento, carência, como contratar e cancelamento. Sobre qual desses você quer saber? Se preferir, reformule a pergunta que eu tento de novo.';
+}
+async function fetchProfile(){
+  const u=await currentUser(); if(!u)return null;
+  return Object.assign({}, u.user_metadata||{});
+}
+function applyProfile(p){ if(!p)return; S.profile=p; if(p.nome)S.form.name=p.nome; if(p.cpf)S.form.cpf=p.cpf; }
+async function saveProfile(fields){
+  if(!SB)return{error:{message:'failed to fetch'}};
+  try{
+    const u=await currentUser(); if(!u)return{error:{message:'Faça login primeiro.'}};
+    const merged=Object.assign({}, (u&&u.user_metadata)||{}, fields);
+    const {data,error}=await SB.auth.updateUser({data:merged});
+    if(!error)applyProfile(merged);
+    return {data,error};
+  }catch(e){return {error:{message:String((e&&e.message)||e)}};}
+}
+let _contaFetched=false;
+function refreshConta(){
+  if(_contaFetched)return;_contaFetched=true;
+  fetchProfile().then(p=>{ if(p){applyProfile(p); if(S.scr==='conta')goTo('conta',rConta());} });
+}
+function mapRowToCard(r){
+  let icon='shield';
+  try{const prod=Object.values(PRODS).find(p=>p.name===r.tipo);if(prod)icon=prod.icon;}catch(e){}
+  return {type:r.tipo,icon:icon,item:r.item||'',price:r.preco||'',cov:r.cobertura||'',accent:'#279989',rgb:'39,153,137'};
+}
+function refreshHomePolicies(){
+  if(_homeFetched)return; _homeFetched=true;
+  currentUser().then(u=>{ if(!u)return;
+    Promise.all([fetchProfile(),loadPolicies()]).then(([prof,rows])=>{
+      applyProfile(prof);
+      S.policies=rows.map(mapRowToCard);
+      if(S.scr==='home')goTo('home',rHome());
+    });
+  });
+}
+function traduzErro(m){
+  m=(m||'').toLowerCase();
+  if(m.includes('invalid login')||m.includes('invalid credentials'))return 'E-mail ou senha incorretos.';
+  if(m.includes('already registered')||m.includes('already been registered')||m.includes('user already'))return 'Esse e-mail já tem conta. Tente entrar.';
+  if(m.includes('email not confirmed'))return 'Confirme seu e-mail antes de entrar.';
+  if(m.includes('password')&&m.includes('6'))return 'A senha precisa ter ao menos 6 caracteres.';
+  if(m.includes('failed to fetch')||m.includes('network')||m.includes('fetch'))return 'Sem conexão com o servidor. Verifique a internet e tente de novo.';
+  if(m.includes('rate limit')||m.includes('too many'))return 'Muitas tentativas. Aguarde um pouco e tente de novo.';
+  return 'Não foi possível concluir. ('+m+')';
+}
+
+// ===================== ICONS (brand colors only) =====================
+const I={
+shield:`<svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V6L12 2Z" fill="currentColor" opacity=".15"/><path d="M12 4.5L5 7.8v4.2c0 3.9 2.7 7.5 7 8.5 4.3-1 7-4.6 7-8.5V7.8L12 4.5Z" fill="currentColor" opacity=".4"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+house:`<svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5V21H3V10.5Z" fill="currentColor" opacity=".15"/><path d="M3 10.5L12 3l9 7.5V21H3V10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 21v-7h6v7" stroke="currentColor" stroke-width="1.8"/></svg>`,
+key:`<svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="14" r="5" stroke="currentColor" stroke-width="1.8" fill="currentColor" opacity=".15"/><path d="M13 11l8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 3l2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17 9l-2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="14" r="2" fill="currentColor"/></svg>`,
+building:`<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.8"/><path d="M7 9h2M7 13h2M7 17h2M15 9h2M15 13h2M15 17h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10 5V3h4v2" stroke="currentColor" stroke-width="1.8"/></svg>`,
+family:`<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="6" r="3" fill="currentColor" opacity=".3"/><circle cx="15" cy="6" r="3" fill="currentColor" opacity=".3"/><path d="M3 20c0-3.3 2.7-6 6-6h6c3.3 0 6 2.7 6 6" stroke="currentColor" stroke-width="1.8" fill="currentColor" opacity=".15"/><path d="M6 20c0-2.2 1.3-4 3-4.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M18 20c0-2.2-1.3-4-3-4.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+heart:`<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="hg" x1="12" y1="4" x2="12" y2="21" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#46EF80"/><stop offset="100%" stop-color="#279989"/></linearGradient></defs><path d="M12 21C12 21 3 14.5 3 8.5A5.5 5.5 0 0 1 12 5.5 5.5 5.5 0 0 1 21 8.5C21 14.5 12 21 12 21Z" fill="url(#hg)" opacity=".85" stroke="url(#hg)" stroke-width="1.5" stroke-linejoin="round"/><path d="M8.5 10c0-1.93 1.57-3.5 3.5-3.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".6"/></svg>`,
+bolt:`<svg viewBox="0 0 24 24" fill="none"><path d="M13 2L4.5 13.5H11L10 22L20 10H13.5L13 2Z" fill="currentColor" opacity=".2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+doc:`<svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6Z" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+car:`<svg viewBox="0 0 24 24" fill="none"><path d="M5 17H3v-5l2-5h14l2 5v5h-2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="currentColor" opacity=".15"/><circle cx="7" cy="17" r="2" fill="currentColor" stroke="currentColor" stroke-width="1.5"/><circle cx="17" cy="17" r="2" fill="currentColor" stroke="currentColor" stroke-width="1.5"/><path d="M5 12h14" stroke="currentColor" stroke-width="1.5"/></svg>`,
+phone:`<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="3" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="18" r="1" fill="currentColor"/><path d="M9 5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+credit:`<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="3" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.8"/><path d="M2 10h20" stroke="currentColor" stroke-width="1.8"/><path d="M6 15h4M16 15h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+pix:`<svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 9l3 3-3 3 8 7 8-7-3-3 3-3-8-7Z" fill="currentColor" opacity=".2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 7v10M7 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".6"/></svg>`,
+bag:`<svg viewBox="0 0 24 24" fill="none"><path d="M6 2c-2.2 0-4 1.8-4 4v14a2 2 0 002 2h16a2 2 0 002-2V6c0-2.2-1.8-4-4-4H6Z" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.8"/><path d="M8 2v4a4 4 0 008 0V2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+warranty:`<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="18" rx="3" fill="currentColor" opacity=".15" stroke="currentColor" stroke-width="1.8"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 7h12M6 17h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".5"/></svg>`,
+lock:`<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor" opacity=".2" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/></svg>`,
+check:`<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".15"/><path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+
+// ===================== DATA =====================
+const T=()=>{const d=new Date();return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')};
+
+const CATS=[
+  {id:'moradia', name:'Moradia',icon:'house',color:'#46EF80',sub:'Casa, fiança e condomínio',prods:['casa','fianca','condo']},
+  {id:'familiar',name:'Proteção Familiar',icon:'family',color:'#279989',sub:'Vida, acidentes e prestamista',prods:['vidacoletivo','vidaativa','acidentes','prestamista']},
+  {id:'financeiro',name:'Proteção Financeira+',icon:'credit',color:'#46EF80',sub:'Cartão, PIX, bolsa e garantia',prods:['cartao','pix','bolsa','garantia']},
+  {id:'mobilidade',name:'Mobilidade',icon:'car',color:'#279989',sub:'Automóvel e celular',prods:['auto','celular']},
+];
+
+const PRODS={
+  casa:{name:'Casa Protegida+',cat:'moradia',icon:'house',sub:'Proteção total para sua residência',
+    flow:['tipo_imovel','cep_resid','condicao','valor_bens','cpf','wa'],price:{m:'R$ 49,90',a:'R$ 34,90',at:'R$ 418,80',badge:'Primeiro mês grátis',cov:'R$ 50.000,00'}},
+  fianca:{name:'Fiança 360',cat:'moradia',icon:'key',sub:'Garantia de aluguel sem fiador',
+    flow:['cpf','cep_aluguel','valor_aluguel','prazo_contrato','wa'],price:{m:'R$ 89,90',a:'R$ 62,90',at:'R$ 754,80',badge:'Aprovação em 24h',cov:'30x o aluguel'}},
+  condo:{name:'Condomínio Protegido',cat:'moradia',icon:'building',sub:'Proteção completa para condomínios',
+    flow:['cep_condo','n_unidades','tipo_cond','wa'],price:{m:'R$ 299,00',a:'R$ 209,30',at:'R$ 2.511,60',badge:'Cobertura coletiva',cov:'R$ 500.000,00'}},
+  vidacoletivo:{name:'Vida Coletivo',cat:'familiar',icon:'family',sub:'Proteção da equipe da sua empresa',
+    flow:['cnpj','n_func','faixa_etaria','wa'],price:{m:'R$ 12,00',a:'R$ 8,40',at:'R$ 100,80',badge:'Por funcionário/mês',cov:'R$ 50.000,00/vida'}},
+  vidaativa:{name:'Vida Ativa+',cat:'familiar',icon:'heart',sub:'Seguro de vida individual completo',
+    flow:['cpf','nascimento','profissao','capital_vida','beneficiario','wa'],price:{m:'R$ 29,90',a:'R$ 20,90',at:'R$ 250,80',badge:'3 meses grátis',cov:'Até R$ 500.000,00'}},
+  acidentes:{name:'Acidentes Pessoais',cat:'familiar',icon:'bolt',sub:'Cobertura em caso de acidentes',
+    flow:['cpf','nascimento','profissao','capital_ap','wa'],price:{m:'R$ 19,90',a:'R$ 13,90',at:'R$ 166,80',badge:'Sem carência',cov:'Até R$ 100.000,00'}},
+  prestamista:{name:'Prestamista',cat:'familiar',icon:'doc',sub:'Quite sua dívida em caso de imprevistos',
+    flow:['cpf','valor_divida','prazo_emp','banco_emp','wa'],price:{m:'R$ 39,90',a:'R$ 27,90',at:'R$ 334,80',badge:'Cobre morte e invalidez',cov:'Valor da dívida'}},
+  auto:{name:'Automóvel',cat:'mobilidade',icon:'car',sub:'Proteção completa para seu veículo',
+    flow:['cpf','placa','cep_auto','wa'],price:{m:'R$ 218,00',a:'R$ 152,60',at:'R$ 1.831,20',badge:'30% off no 1° mês',cov:'R$ 45.000,00'}},
+  celular:{name:'Celular',cat:'mobilidade',icon:'phone',sub:'Roubo, quebra e danos no aparelho',
+    flow:['cpf','modelo','wa'],price:{m:'R$ 47,90',a:'R$ 33,50',at:'R$ 402,00',badge:'Ative hoje mesmo',cov:'Valor do aparelho'}},
+  cartao:{name:'Cartão Protegido',cat:'financeiro',icon:'credit',sub:'Proteção contra fraudes e roubo',
+    flow:['cpf','banco_cartao','limite_cartao','wa'],price:{m:'R$ 14,90',a:'R$ 10,40',at:'R$ 124,80',badge:'Cobertura imediata',cov:'Até R$ 10.000,00'}},
+  pix:{name:'Pix Protegido',cat:'financeiro',icon:'pix',sub:'Cobertura para transações PIX',
+    flow:['cpf','banco_pix','limite_pix','wa'],price:{m:'R$ 9,90',a:'R$ 6,90',at:'R$ 82,80',badge:'4 acionamentos/ano',cov:'R$ 5.000,00/ano'}},
+  bolsa:{name:'Bolsa Protegida',cat:'financeiro',icon:'bag',sub:'Proteja seus pertences pessoais',
+    flow:['cpf','tipo_bolsa','valor_bens_bolsa','wa'],price:{m:'R$ 24,90',a:'R$ 17,40',at:'R$ 208,80',badge:'Sem nota fiscal',cov:'R$ 5.000,00'}},
+  garantia:{name:'Garantia Estendida',cat:'financeiro',icon:'warranty',sub:'Estenda a garantia dos seus produtos',
+    flow:['cpf','categoria_prod','valor_produto','data_compra','wa'],price:{m:'R$ 19,90',a:'R$ 13,90',at:'R$ 166,80',badge:'Cobre defeito de fábrica',cov:'Valor do produto'}},
+};
+
+const COVS={
+  casa:['Incêndio, raio e explosão','Roubo e furto de móveis e eletrodomésticos','Danos elétricos','Vendaval e granizo','Responsabilidade civil familiar','Assistência 24h para emergências'],
+  fianca:['Cobertura de aluguel em caso de inadimplência','Multa por quebra de contrato','Danos ao imóvel','IPTU e condomínio em atraso','Pintura e reparos ao devolver','Honorários advocatícios'],
+  condo:['Incêndio nas áreas comuns','Responsabilidade civil do condomínio','Equipamentos e maquinários','Acidentes com funcionários','Danos à estrutura','RC dos condôminos'],
+  vidacoletivo:['Morte natural e acidental para todos','Invalidez permanente (IPA e IPP)','DIT — diária por incapacidade','Doenças graves','Assistência funeral','Repatriação'],
+  vidaativa:['Morte natural e acidental','Invalidez permanente total ou parcial','Doenças graves (infarto, AVC, câncer)','Assistência funeral para a família','Renda mensal por invalidez','Sem carência para acidentes'],
+  acidentes:['Morte por acidente','Invalidez permanente total por acidente','Invalidez permanente parcial','DIT — diária por incapacidade','Despesas médicas e hospitalares','Sem carência'],
+  prestamista:['Quitação da dívida em caso de morte','Quitação por invalidez permanente','Perda involuntária de emprego','Incapacidade temporária','Doenças graves','Sem carência para acidentes'],
+  auto:['Colisão, tombamento e capotamento','Roubo e furto total e parcial','Incêndio e explosão','Danos a terceiros (RCF-V)','Assistência 24h e guincho','Carro reserva por até 7 dias'],
+  celular:['Roubo, furto simples e qualificado','Quebra acidental de tela e vidro','Danos elétricos e por líquido','Sem franquia e sem carência','Reembolso em dinheiro na sua conta','Cobertura internacional'],
+  cartao:['Compras não reconhecidas após roubo','Saque forçado sob coerção','PIX e TED não autorizados','Clonagem de cartão','Bloqueio emergencial 24h','Até R$10.000 por evento'],
+  pix:['PIX realizado sob roubo ou coerção','Golpe do falso suporte técnico','Transações após roubo do celular','4 acionamentos por ano','Transferências fraudulentas','Cobertura até R$ 5.000/ano'],
+  bolsa:['Roubo e furto qualificado','Celular e notebook dentro da bolsa','Carteira, documentos e chaves','Óculos de grau e acessórios','Sem necessidade de nota fiscal','Reembolso em até 5 dias úteis'],
+  garantia:['Defeitos de fabricação pós-garantia','Danos elétricos e por mau uso','Assistência técnica autorizada','Cobertura de peças e mão de obra','Sem franquia','Prazo de até 24 meses extra'],
+};
+
+// FORM CONFIG PER STEP KEY
+const FC={
+  tipo_imovel:{type:'sel',q:'Qual é o tipo do seu imóvel?',sub:'Selecione a opção que melhor descreve',lbl:'TIPO DE IMÓVEL',opts:[{v:'apartamento',n:'Apartamento',s:'Em condomínio ou edifício',ico:'building'},{v:'casa',n:'Casa',s:'Residência independente',ico:'house'},{v:'kitnet',n:'Kitnet / Studio',s:'Unidade compacta',ico:'house'}]},
+  condicao:{type:'sel',q:'Condição de ocupação do imóvel?',sub:'Como você ocupa este imóvel',lbl:'CONDIÇÃO',opts:[{v:'proprio',n:'Próprio',s:'Imóvel de sua propriedade',ico:'key'},{v:'alugado',n:'Alugado',s:'Você é o inquilino',ico:'doc'},{v:'financiado',n:'Financiado',s:'Em processo de quitação',ico:'warranty'}]},
+  tipo_cond:{type:'sel',q:'Qual é o tipo do condomínio?',sub:'Selecione a categoria do condomínio',lbl:'TIPO',opts:[{v:'residencial',n:'Residencial',s:'Prédio de apartamentos',ico:'building'},{v:'comercial',n:'Comercial',s:'Salas e escritórios',ico:'doc'},{v:'misto',n:'Misto',s:'Residencial e comercial',ico:'building'}]},
+  faixa_etaria:{type:'sel',q:'Faixa etária média dos funcionários?',sub:'Usado para calcular o perfil de risco',lbl:'FAIXA ETÁRIA',opts:[{v:'ate30',n:'Até 30 anos',s:'Maioria jovem'},{v:'30a50',n:'30 a 50 anos',s:'Perfil adulto ativo'},{v:'acima50',n:'Acima de 50 anos',s:'Perfil sênior'}]},
+  tipo_bolsa:{type:'sel',q:'Qual tipo de item será segurado?',sub:'Selecione o que melhor descreve',lbl:'TIPO',opts:[{v:'mochila',n:'Mochila',s:'Com notebook, celular etc',ico:'bag'},{v:'bolsa',n:'Bolsa feminina',s:'Pertences do dia a dia',ico:'bag'},{v:'maleta',n:'Maleta / pasta',s:'Uso profissional',ico:'doc'}]},
+  categoria_prod:{type:'sel',q:'Qual categoria do produto?',sub:'Tipo de produto a ser segurado',lbl:'CATEGORIA',opts:[{v:'eletro',n:'Eletrodoméstico',s:'Geladeira, fogão, máquina...',ico:'warranty'},{v:'eletronico',n:'Eletrônico',s:'TV, notebook, tablet...',ico:'phone'},{v:'climatiz',n:'Climatização',s:'Ar-condicionado, aquecedor',ico:'bolt'}]},
+  cpf:{type:'txt',q:'Qual é o seu CPF?',sub:'CPF de quem vai utilizar o seguro',lbl:'CPF',ph:'000.000.000-00',key:'cpf',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,11);if(v.length>9)return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');if(v.length>6)return v.replace(/(\d{3})(\d{3})(\d+)/,'$1.$2.$3');if(v.length>3)return v.replace(/(\d{3})(\d+)/,'$1.$2');return v},tips:['Seus dados são criptografados e protegidos pela LGPD.','O reembolso é pago em conta com o mesmo CPF.']},
+  cnpj:{type:'txt',q:'Qual é o CNPJ da empresa?',sub:'CNPJ da empresa que contratará o seguro coletivo',lbl:'CNPJ',ph:'00.000.000/0001-00',key:'cnpj',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,14);if(v.length>12)return v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');if(v.length>8)return v.replace(/(\d{2})(\d{3})(\d{3})(\d+)/,'$1.$2.$3/$4');if(v.length>5)return v.replace(/(\d{2})(\d{3})(\d+)/,'$1.$2.$3');if(v.length>2)return v.replace(/(\d{2})(\d+)/,'$1.$2');return v},tips:['Contratação disponível para empresas de qualquer porte.']},
+  placa:{type:'txt',q:'Qual a placa do veículo?',sub:'Placa do carro que será segurado',lbl:'PLACA',ph:'ABC-1D23',key:'placa',im:'text',mask:v=>{v=v.replace(/[^a-zA-Z0-9]/g,'').toUpperCase().slice(0,7);if(v.length>3)return v.slice(0,3)+'-'+v.slice(3);return v},tips:['Identificamos o modelo e histórico do veículo pela placa.']},
+  cep_resid:{type:'txt',q:'Qual o CEP do imóvel?',sub:'CEP da residência a ser segurada',lbl:'CEP',ph:'00000-000',key:'cep',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,8);if(v.length>5)return v.replace(/(\d{5})(\d+)/,'$1-$2');return v},tips:['A localização avalia o risco da região.']},
+  cep_aluguel:{type:'txt',q:'Qual o CEP do imóvel alugado?',sub:'CEP da propriedade que será locada',lbl:'CEP',ph:'00000-000',key:'cep_aluguel',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,8);if(v.length>5)return v.replace(/(\d{5})(\d+)/,'$1-$2');return v},tips:['Usamos para validar o endereço do imóvel locado.']},
+  cep_auto:{type:'txt',q:'Qual o CEP onde o veículo fica?',sub:'CEP do local de pernoite habitual',lbl:'CEP',ph:'00000-000',key:'cep',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,8);if(v.length>5)return v.replace(/(\d{5})(\d+)/,'$1-$2');return v},tips:['O local de pernoite influencia no preço do seguro.']},
+  cep_condo:{type:'txt',q:'Qual o CEP do condomínio?',sub:'CEP do condomínio a ser segurado',lbl:'CEP',ph:'00000-000',key:'cep_condo',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,8);if(v.length>5)return v.replace(/(\d{5})(\d+)/,'$1-$2');return v},tips:['A localização determina o perfil de risco do condomínio.']},
+  valor_bens:{type:'txt',q:'Valor estimado dos seus bens?',sub:'Mobília, eletrodomésticos e eletrônicos',lbl:'VALOR DOS BENS',ph:'R$ 0,00',key:'valor_bens',im:'numeric',mask:maskMoney,tips:['Estime o valor total para repor todos os seus bens.','Não precisa ser exato — usamos para definir a cobertura.']},
+  valor_aluguel:{type:'txt',q:'Qual o valor do aluguel mensal?',sub:'Valor mensal do aluguel do imóvel',lbl:'ALUGUEL MENSAL',ph:'R$ 0,00',key:'valor_aluguel',im:'numeric',mask:maskMoney,tips:['A cobertura equivale a 30x o valor do aluguel.']},
+  prazo_contrato:{type:'txt',q:'Qual o prazo do contrato?',sub:'Duração prevista da locação',lbl:'PRAZO (MESES)',ph:'Ex: 30',key:'prazo_contrato',im:'numeric',mask:v=>v.replace(/\D/g,'').slice(0,3),tips:['O seguro tem a mesma vigência do contrato de aluguel.']},
+  n_unidades:{type:'txt',q:'Quantas unidades tem o condomínio?',sub:'Total de apartamentos, salas ou lojas',lbl:'Nº DE UNIDADES',ph:'Ex: 120',key:'n_unidades',im:'numeric',mask:v=>v.replace(/\D/g,'').slice(0,5),tips:['Calculamos o risco proporcional ao número de unidades.']},
+  n_func:{type:'txt',q:'Quantos funcionários serão segurados?',sub:'Total de vidas no seguro coletivo',lbl:'Nº DE FUNCIONÁRIOS',ph:'Ex: 50',key:'n_func',im:'numeric',mask:v=>v.replace(/\D/g,'').slice(0,5),tips:['Mínimo de 3 funcionários para contratação coletiva.','Cubra todos da sua equipe com um único contrato.']},
+  nascimento:{type:'txt',q:'Qual sua data de nascimento?',sub:'Usamos para calcular o perfil de risco',lbl:'DATA DE NASCIMENTO',ph:'DD/MM/AAAA',key:'nascimento',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,8);if(v.length>4)return v.replace(/(\d{2})(\d{2})(\d+)/,'$1/$2/$3');if(v.length>2)return v.replace(/(\d{2})(\d+)/,'$1/$2');return v},tips:['A idade é um dos fatores que compõem o preço do seguro de vida.']},
+  profissao:{type:'txt',q:'Qual é a sua profissão?',sub:'Pode impactar a cobertura de invalidez',lbl:'PROFISSÃO',ph:'Ex: Analista, Professor...',key:'profissao',im:'text',mask:null,tips:['Profissões de maior risco podem ter coberturas específicas.']},
+  capital_vida:{type:'txt',q:'Qual capital segurado deseja?',sub:'Valor que seus beneficiários receberão',lbl:'CAPITAL SEGURADO',ph:'R$ 0,00',key:'capital_vida',im:'numeric',mask:maskMoney,tips:['Recomendamos 5 a 10x sua renda anual.','Você pode ajustar o valor a qualquer momento.']},
+  capital_ap:{type:'txt',q:'Qual capital deseja para acidentes?',sub:'Valor em caso de invalidez ou morte acidental',lbl:'CAPITAL SEGURADO',ph:'R$ 0,00',key:'capital_ap',im:'numeric',mask:maskMoney,tips:['Sem carência — cobertura desde o primeiro dia.']},
+  beneficiario:{type:'txt',q:'Quem será o beneficiário?',sub:'Nome completo do beneficiário principal',lbl:'BENEFICIÁRIO',ph:'Nome completo',key:'beneficiario',im:'text',mask:null,tips:['Você pode adicionar mais beneficiários na sua apólice.']},
+  valor_divida:{type:'txt',q:'Qual o valor total da dívida?',sub:'Saldo devedor do empréstimo ou financiamento',lbl:'VALOR DA DÍVIDA',ph:'R$ 0,00',key:'valor_divida',im:'numeric',mask:maskMoney,tips:['O seguro quita o saldo devedor em caso de sinistro.']},
+  prazo_emp:{type:'txt',q:'Qual o prazo do empréstimo?',sub:'Número de meses restantes',lbl:'PRAZO RESTANTE (MESES)',ph:'Ex: 36',key:'prazo_emp',im:'numeric',mask:v=>v.replace(/\D/g,'').slice(0,3),tips:['O seguro tem a mesma duração do seu empréstimo.']},
+  banco_emp:{type:'txt',q:'Qual banco ou financeira?',sub:'Instituição credora do empréstimo',lbl:'BANCO / FINANCEIRA',ph:'Ex: Itaú, Caixa, BMG...',key:'banco_emp',im:'text',mask:null,tips:[]},
+  modelo:{type:'txt',q:'Qual o modelo do seu celular?',sub:'Marca e modelo do aparelho a ser segurado',lbl:'MODELO DO CELULAR',ph:'Ex: iPhone 15 Pro Max',key:'modelo',im:'text',mask:null,tips:['Cobrimos celulares de até 3 anos de uso.','Não é necessária nota fiscal para contratar.']},
+  banco_cartao:{type:'txt',q:'Qual banco do cartão?',sub:'Emissor do cartão a ser protegido',lbl:'BANCO EMISSOR',ph:'Ex: Nubank, Itaú, Bradesco...',key:'banco_cartao',im:'text',mask:null,tips:['Cobrimos cartões de débito e crédito.']},
+  limite_cartao:{type:'txt',q:'Qual o limite do cartão?',sub:'Limite total disponível no cartão',lbl:'LIMITE DO CARTÃO',ph:'R$ 0,00',key:'limite_cartao',im:'numeric',mask:maskMoney,tips:['Quanto maior o limite, maior a cobertura disponível.']},
+  banco_pix:{type:'txt',q:'Qual seu banco principal?',sub:'Banco onde você mais usa o PIX',lbl:'BANCO PRINCIPAL',ph:'Ex: Nubank, Caixa, Inter...',key:'banco_pix',im:'text',mask:null,tips:['Cobrimos PIX de qualquer banco ou instituição financeira.']},
+  limite_pix:{type:'txt',q:'Qual seu limite PIX diário?',sub:'Limite configurado para transferências PIX',lbl:'LIMITE PIX DIÁRIO',ph:'R$ 0,00',key:'limite_pix',im:'numeric',mask:maskMoney,tips:['Cobertura de até R$ 5.000 por ano.','4 acionamentos por ano por apólice.']},
+  valor_bens_bolsa:{type:'txt',q:'Valor estimado dos itens na bolsa?',sub:'Celular, notebook, carteira e pertences',lbl:'VALOR DOS ITENS',ph:'R$ 0,00',key:'valor_bens_bolsa',im:'numeric',mask:maskMoney,tips:['Estime o valor total dos itens que você carrega habitualmente.','Não precisa de nota fiscal para acionar o seguro.']},
+  valor_produto:{type:'txt',q:'Qual o valor do produto?',sub:'Valor pago na nota fiscal',lbl:'VALOR DO PRODUTO',ph:'R$ 0,00',key:'valor_produto',im:'numeric',mask:maskMoney,tips:['Use o valor da nota fiscal do produto.']},
+  data_compra:{type:'txt',q:'Qual a data de compra?',sub:'Data constante na nota fiscal',lbl:'DATA DE COMPRA',ph:'DD/MM/AAAA',key:'data_compra',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,8);if(v.length>4)return v.replace(/(\d{2})(\d{2})(\d+)/,'$1/$2/$3');if(v.length>2)return v.replace(/(\d{2})(\d+)/,'$1/$2');return v},tips:['Produtos com até 12 meses de compra são elegíveis.']},
+  wa:{type:'txt',q:'Qual o seu WhatsApp?',sub:'Enviaremos sua apólice por aqui',lbl:'WHATSAPP',ph:'(11) 99999-9999',key:'wa',im:'numeric',mask:v=>{v=v.replace(/\D/g,'').slice(0,11);if(v.length>10)return v.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');if(v.length>6)return v.replace(/(\d{2})(\d{4,5})(\d*)/,'($1) $2-$3');if(v.length>2)return v.replace(/(\d{2})(\d+)/,'($1) $2');return v.length?'('+v:v},tips:['Você receberá sua apólice em PDF direto no WhatsApp.','Avisos de renovação chegam por aqui também.']},
+};
+
+function maskMoney(v){
+  v=v.replace(/\D/g,'');
+  if(!v)return '';
+  const n=parseInt(v)/100;
+  return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+// ===================== STATE =====================
+const S={scr:null,cat:null,prod:null,step:0,plan:'mensal',payMethod:null,form:{},policies:[],cardForm:{num:'',name:'',exp:'',cvv:''},cvvFocus:false,curPol:null,sinistroTipo:null};
+const gP=()=>PRODS[S.prod];
+const gFlow=()=>gP()?.flow||[];
+
+// ===================== SVG HELPERS =====================
+function ico(name,size=22,col='currentColor'){
+  return`<svg viewBox="0 0 24 24" style="width:${size}px;height:${size}px;color:${col}" fill="none">${I[name].replace('<svg viewBox="0 0 24 24" fill="none">','')}</svg>`;
+}
+
+// ===================== SHARED COMPONENTS =====================
+const sb=(d=true)=>`<div class="sb ${d?'sb-d':'sb-l'}"><span class="st">${T()}</span><span class="si">📶 🔋</span></div>`;
+const nb=({back='noop',d=true,cancel=true,title=''})=>`<div class="nb">
+  <button class="nb-btn ${d?'nb-d':'nb-l'}" data-a="${back}">‹</button>
+  ${title?`<span style="font-size:16px;font-weight:800;color:${d?'#fff':'#141416'}">${title}</span>`:'<div></div>'}
+  ${cancel?`<button class="nb-cancel" data-a="cancel">Cancelar</button>`:`<div style="width:40px"></div>`}
+</div>`;
+const stepDots=(flow,cur)=>`<div class="step-dots">${flow.map((_,i)=>`<div class="step-dot ${i<cur?'done':i===cur?'cur':''}"></div>`).join('')}</div>`;
+
+// ===================== SCREEN BUILDERS =====================
+
+// SPLASH
+function rSplash(){
+  return`<div class="scr" id="splash-root" style="background:#001820;overflow:hidden;display:flex;flex-direction:column">
+  <canvas id="sp-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
+  <div id="sp-blob" style="position:absolute;top:-20%;left:-20%;width:140%;height:140%;pointer-events:none;z-index:0;background:radial-gradient(ellipse 60% 55% at 50% 50%,rgba(70,239,128,.055) 0%,transparent 70%);animation:blobPulse 4s ease-in-out infinite"></div>
+  ${sb(true)}
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;position:relative;z-index:1;min-height:0">
+    <div id="sp-ring" style="position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:32px;opacity:0">
+      <svg viewBox="0 0 120 120" style="position:absolute;inset:0;width:120px;height:120px" fill="none">
+        <circle cx="60" cy="60" r="56" stroke="rgba(70,239,128,.12)" stroke-width="1.5"/>
+        <circle id="sp-arc" cx="60" cy="60" r="56" stroke="#46EF80" stroke-width="2" stroke-dasharray="351.86" stroke-dashoffset="351.86" stroke-linecap="round" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1)"/>
+      </svg>
+      <div style="width:88px;height:98px;display:flex;align-items:center;justify-content:center" class="pg">
+        <svg viewBox="0 0 80 90" style="width:88px;height:98px" fill="none">
+          <path d="M40 4L8 16V40C8 59 22 75 40 80C58 75 72 59 72 40V16L40 4Z" fill="rgba(70,239,128,.07)"/>
+          <path d="M40 10L14 20V40C14 56 26 70 40 74C54 70 66 56 66 40V20L40 10Z" fill="rgba(70,239,128,.16)"/>
+          <path d="M40 16L20 25V40C20 52 30 64 40 67C50 64 60 52 60 40V25L40 16Z" fill="rgba(70,239,128,.36)"/>
+          <path d="M28 41L36 49L52 32" stroke="#46EF80" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:10px;min-height:72px">
+      <div style="font-size:32px;font-weight:900;color:#fff;letter-spacing:-.8px;line-height:1.1;min-height:40px"><span id="sp-t1"></span><span id="sp-cur" style="color:#46EF80;animation:blink .6s step-end infinite">|</span></div>
+      <div id="sp-tag" style="font-size:12px;font-weight:700;color:#46EF80;letter-spacing:.22em;text-transform:uppercase;margin-top:10px;opacity:0;transition:opacity .5s ease">você em movimento</div>
+    </div>
+  </div>
+  <div id="sp-sheet" style="background:#031620;border-radius:28px 28px 0 0;padding:32px 24px 56px;border-top:1px solid rgba(255,255,255,.05);transform:translateY(110%);transition:transform .7s cubic-bezier(.16,1,.3,1);position:relative;z-index:2;flex-shrink:0">
+    <div style="width:32px;height:3px;background:rgba(255,255,255,.12);border-radius:2px;margin:0 auto 28px"></div>
+    <div style="font-size:13px;font-weight:700;color:#46EF80;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;opacity:.85">Proteger você é nossa prioridade.</div>
+    <div style="font-size:26px;font-weight:900;color:#fff;line-height:1.25;margin-bottom:10px;letter-spacing:-.4px">13 coberturas.<br>Uma plataforma.</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.42);margin-bottom:28px;line-height:1.65;font-weight:400">Casa, celular, vida, automóvel, cartão, PIX — 100% online. Cotação em menos de 2 minutos.</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-neon" data-a="go-cats">Fazer uma cotação gratuita</button>
+      <button class="btn btn-ghost" data-a="go-login">Entrar na minha conta</button>
+    </div>
+  </div>
+</div>`}
+
+function splashInit(el){
+  // ── Canvas particles ──
+  const canvas=el.querySelector('#sp-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let W=canvas.offsetWidth,H=canvas.offsetHeight;
+  canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  const cols=['#46EF80','#279989','rgba(70,239,128,.6)','rgba(39,153,137,.5)'];
+  const pts=Array.from({length:55},()=>({
+    x:Math.random()*W, y:H+Math.random()*H*0.4,
+    r:Math.random()*2.5+1, vx:(Math.random()-.5)*.35,
+    vy:-(Math.random()*0.6+0.25), op:Math.random()*.7+.2,
+    col:cols[Math.floor(Math.random()*cols.length)], delay:Math.random()*2000
+  }));
+  let start=null,raf;
+  function drawParticles(ts){
+    if(!start)start=ts;
+    const elapsed=ts-start;
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{
+      if(elapsed<p.delay)return;
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.y<-20){p.y=H+10;p.x=Math.random()*W;}
+      ctx.save();
+      ctx.globalAlpha=p.op*(Math.min(elapsed-p.delay,500)/500);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.col;
+      ctx.shadowColor=p.col;
+      ctx.shadowBlur=6;
+      ctx.fill();
+      ctx.restore();
+    });
+    raf=requestAnimationFrame(drawParticles);
+  }
+  raf=requestAnimationFrame(drawParticles);
+
+  // ── Shield ring entrance ──
+  const ring=el.querySelector('#sp-ring');
+  const arc=el.querySelector('#sp-arc');
+  setTimeout(()=>{
+    ring.style.opacity='1';
+    ring.style.transition='opacity .4s ease, transform .85s cubic-bezier(.34,1.4,.64,1)';
+    ring.style.transform='scale(1)';
+  },200);
+  setTimeout(()=>{if(arc)arc.style.strokeDashoffset='0';},400);
+
+  // ── Typewriter ──
+  const t1=el.querySelector('#sp-t1');
+  const cur=el.querySelector('#sp-cur');
+  const full='Você Seguradora';
+  let idx=0;
+  function type(){
+    if(!t1)return;
+    if(idx<=full.length){
+      t1.textContent=full.slice(0,idx);
+      idx++;
+      setTimeout(type, idx<=4?100:idx<=5?160:65);
+    } else {
+      setTimeout(()=>{if(cur)cur.style.display='none';},500);
+      // tagline
+      const tag=el.querySelector('#sp-tag');
+      if(tag){tag.style.opacity='1';}
+      // sheet
+      setTimeout(()=>{
+        const sh=el.querySelector('#sp-sheet');
+        if(sh)sh.style.transform='translateY(0)';
+      },800);
+    }
+  }
+  setTimeout(type,900);
+
+  // cleanup on navigate
+  el.addEventListener('remove',()=>cancelAnimationFrame(raf));
+}
+
+
+// LOGIN
+function rLogin(){
+  return`<div class="scr" style="background:var(--navy);overflow:hidden">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(70,239,128,.06) 0%,transparent 70%);pointer-events:none"></div>
+  ${sb(true)}
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px;position:relative;z-index:1">
+    <div style="margin-bottom:32px">
+      <div style="width:56px;height:56px;border-radius:18px;background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.2);display:flex;align-items:center;justify-content:center;margin-bottom:24px">${ico('shield',28,'#46EF80')}</div>
+      <div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:-.5px;margin-bottom:8px">Bem-vindo de<br>volta</div>
+      <div style="font-size:15px;color:rgba(255,255,255,.45)">Entre com seu e-mail e senha</div>
+    </div>
+    <div class="iw" style="margin-bottom:12px">
+      <div class="ilbl">E-MAIL</div>
+      <input class="inp" id="login-email" type="email" inputmode="email" placeholder="voce@email.com" autocomplete="email" style="font-size:18px">
+    </div>
+    <div class="iw" style="margin-bottom:8px">
+      <div class="ilbl">SENHA</div>
+      <input class="inp" id="login-senha" type="password" placeholder="••••••••" autocomplete="current-password" style="font-size:18px">
+    </div>
+    <div id="login-erro" style="font-size:13px;color:#ff6b6b;min-height:18px;margin:6px 2px 0;line-height:1.4"></div>
+    <button class="btn btn-neon" id="btn-login" style="margin-top:4px">Entrar</button>
+    <button class="btn btn-ghost" data-a="go-cadastro" style="margin-top:10px">Criar uma conta</button>
+    <button data-a="go-cats" style="margin-top:14px;background:none;border:none;color:rgba(255,255,255,.5);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Fazer cotação sem conta</button>
+  </div>
+  <div style="padding:0 28px 48px;position:relative;z-index:1;text-align:center">
+    <div style="font-size:11px;color:rgba(255,255,255,.25);line-height:1.6">Autorizada pela SUSEP · Registro nº 10.001.234-5<br>Seus dados são protegidos pela LGPD</div>
+  </div>
+</div>`}
+
+// CADASTRO
+function rCadastro(){
+  const iw=(lbl,id,ph,type='text',im='text')=>`<div class="iw" style="margin-bottom:12px">
+    <div class="ilbl">${lbl}</div>
+    <input class="inp" id="${id}" type="${type}" inputmode="${im}" placeholder="${ph}" style="font-size:18px">
+  </div>`;
+  return`<div class="scr" style="background:var(--navy);overflow:hidden">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 20%,rgba(70,239,128,.06) 0%,transparent 70%);pointer-events:none"></div>
+  ${sb(true)}
+  ${nb({back:'go-login',d:true,cancel:false,title:'Criar conta'})}
+  <div class="scrl" style="padding:4px 28px 40px;position:relative;z-index:1">
+    <div style="margin:6px 0 22px">
+      <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;margin-bottom:6px">Crie sua conta</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.45)">Leva menos de 1 minuto</div>
+    </div>
+    ${iw('NOME COMPLETO','cad-nome','Seu nome')}
+    ${iw('E-MAIL','cad-email','voce@email.com','email','email')}
+    ${iw('CELULAR (opcional)','cad-tel','(11) 99999-9999','tel','numeric')}
+    ${iw('SENHA','cad-senha','Mínimo 6 caracteres','password','text')}
+    <div id="cad-erro" style="font-size:13px;color:#ff6b6b;min-height:18px;margin:4px 2px 8px;line-height:1.4"></div>
+    <button class="btn btn-neon" id="btn-cadastro" style="margin-top:4px">Criar conta</button>
+    <div style="text-align:center;margin-top:16px;font-size:13px;color:rgba(255,255,255,.4)">Ao criar uma conta você concorda com os termos e a política de privacidade.</div>
+  </div>
+</div>`}
+
+// OTP
+function rOTP(){
+  const phone=S.form.loginPhone||'(11) 99999-9999';
+  return`<div class="scr" style="background:var(--navy)">
+  ${sb(true)}
+  ${nb({back:'go-login',d:true,cancel:false,title:'Verificação'})}
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px">
+    <div style="text-align:center;margin-bottom:40px">
+      <div style="width:64px;height:64px;border-radius:20px;background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">${ico('family',28,'#46EF80')}</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:8px">Código enviado!</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.45);line-height:1.5">Enviamos um código de 6 dígitos para<br><strong style="color:#fff">${phone}</strong></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:32px" id="otp-boxes">
+      ${[0,1,2,3,4,5].map(i=>`<input id="otp-${i}" type="tel" inputmode="numeric" maxlength="1" style="width:46px;height:56px;border-radius:14px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);color:#fff;font-size:22px;font-weight:700;text-align:center;outline:none;font-family:inherit;transition:border-color .2s;-webkit-text-fill-color:#fff">`).join('')}
+    </div>
+    <button class="btn btn-neon" id="btn-otp" disabled style="opacity:.4">Verificar código</button>
+    <div style="text-align:center;margin-top:20px">
+      <span id="otp-timer" style="font-size:13px;color:rgba(255,255,255,.35)">Reenviar em <strong id="otp-count" style="color:#46EF80">60s</strong></span>
+      <button id="btn-resend" style="display:none;background:none;border:none;color:#46EF80;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Reenviar código</button>
+    </div>
+  </div>
+</div>`}
+
+// APÓLICE DETAIL
+function rApoliceDetail(){
+  const p=S.curPol||{type:'Automóvel',icon:'car',item:'Honda Civic 2022',price:'R$ 218,00/mês',cov:'R$ 45.000,00',accent:'#279989',rgb:'39,153,137'};
+  const covs=COVS[S.prod]||['Colisão total e parcial','Roubo e furto','Danos a terceiros','Assistência 24h nacional','Carro reserva por 10 dias','Cobertura de vidros'];
+  const susep='10.001.234-5/'+Math.floor(Math.random()*9000+1000);
+  const polNum='VCE-'+String(Date.now()).slice(-8);
+  const fmt=d=>d.toLocaleDateString('pt-BR');
+  const now=new Date(),end=new Date();end.setFullYear(end.getFullYear()+1);
+  return`<div class="scr" style="background:var(--surf)">
+  ${sb(false)}
+  ${nb({back:'go-home',d:false,cancel:false,title:'Apólice'})}
+  <div style="background:var(--navy);padding:16px 24px 28px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="width:52px;height:52px;border-radius:16px;background:rgba(${p.rgb},.15);border:1px solid rgba(${p.rgb},.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(p.icon,26,p.accent)}</div>
+      <div>
+        <div style="font-size:18px;font-weight:800;color:#fff">${p.type}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:2px">${p.item}</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:5px;background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.2);border-radius:20px;padding:5px 12px">
+        <div style="width:6px;height:6px;border-radius:50%;background:#46EF80;animation:pulseD 2s ease-in-out infinite"></div>
+        <span style="font-size:11px;font-weight:800;color:#46EF80">ATIVA</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;background:rgba(255,255,255,.05);border-radius:14px;padding:14px 16px">
+      <div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Mensalidade</div><div style="font-size:20px;font-weight:900;color:#46EF80">${p.price}</div></div>
+      <div style="text-align:right"><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Cobertura máxima</div><div style="font-size:18px;font-weight:800;color:#fff">${p.cov}</div></div>
+    </div>
+  </div>
+  <div class="scrl" style="padding:16px 20px 100px">
+    <div style="background:#fff;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:var(--card-sh)">
+      <div style="padding:16px 20px 4px"><div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase">Informações da apólice</div></div>
+      ${[['Número da apólice',polNum],['Registro SUSEP',susep],['Início da vigência',fmt(now)],['Fim da vigência',fmt(end)],['Modalidade',S.plan==='anual'?'Anual':'Mensal']].map(([k,v],i)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;${i<4?'border-bottom:1px solid var(--border)':''}">
+        <span style="font-size:13px;color:var(--txt2)">${k}</span><span style="font-size:13px;font-weight:700;color:var(--txt1)">${v}</span>
+      </div>`).join('')}
+    </div>
+    <div style="background:#fff;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:var(--card-sh)">
+      <div style="padding:16px 20px 4px"><div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase">Coberturas incluídas</div></div>
+      ${covs.map((c,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;${i<covs.length-1?'border-bottom:1px solid var(--border)':''}"><div style="flex-shrink:0">${ico('check',18,'#279989')}</div><span style="font-size:13px;color:var(--txt1)">${c}</span></div>`).join('')}
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <button data-a="go-sinistro" style="flex:1;background:rgba(220,38,38,.06);border:1.5px solid rgba(220,38,38,.2);border-radius:14px;padding:14px;font-size:14px;font-weight:700;color:#dc2626;cursor:pointer;font-family:inherit">Abrir sinistro</button>
+      <button onclick="this.textContent='✓ Baixando...'" style="flex:1;background:var(--navy);border:none;border-radius:14px;padding:14px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Baixar PDF</button>
+    </div>
+    <div style="background:rgba(39,153,137,.06);border:1px solid rgba(39,153,137,.2);border-radius:14px;padding:14px 16px;display:flex;gap:10px;align-items:flex-start">
+      <div style="flex-shrink:0">${ico('lock',16,'#279989')}</div>
+      <span style="font-size:12px;color:var(--teal);line-height:1.5">Apólice registrada na SUSEP nº 10.001.234-5 e protegida pela LGPD. Dados criptografados ponta a ponta.</span>
+    </div>
+  </div>
+</div>`}
+
+// SINISTRO — TIPO
+function rSinistro(){
+  const tipos=[
+    {id:'colisao',n:'Colisão / Batida',s:'Acidente envolvendo veículo',ico:'car'},
+    {id:'roubo',n:'Roubo ou Furto',s:'Veículo ou objeto subtraído',ico:'shield'},
+    {id:'incendio',n:'Incêndio ou Explosão',s:'Danos causados por fogo',ico:'bolt'},
+    {id:'eletrico',n:'Danos Elétricos',s:'Queima por raio ou curto',ico:'bolt'},
+    {id:'fenomeno',n:'Fenômeno natural',s:'Enchente, granizo, vendaval',ico:'house'},
+    {id:'outros',n:'Outros danos',s:'Descreva sua ocorrência',ico:'doc'},
+  ];
+  return`<div class="scr" style="background:var(--navy)">
+  ${sb(true)}
+  ${nb({back:'go-home',d:true,cancel:false,title:'Abrir Sinistro'})}
+  <div class="scrl" style="padding:0 20px 40px">
+    <div style="margin-bottom:20px">
+      <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:6px">O que aconteceu?</div>
+      <div style="font-size:14px;color:var(--muted)">Selecione o tipo de ocorrência</div>
+    </div>
+    ${tipos.map(t=>`<div data-a="sel-sinistro" data-sid="${t.id}" style="background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.08);border-radius:18px;padding:16px 20px;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:14px;transition:all .15s" ontouchstart="this.style.borderColor='rgba(70,239,128,.4)'" ontouchend="this.style.borderColor='rgba(255,255,255,.08)'">
+      <div style="width:44px;height:44px;border-radius:12px;background:rgba(70,239,128,.08);border:1px solid rgba(70,239,128,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(t.ico,22,'#46EF80')}</div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:2px">${t.n}</div><div style="font-size:12px;color:var(--muted)">${t.s}</div></div>
+      <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;color:rgba(255,255,255,.25);flex-shrink:0"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>`).join('')}
+  </div>
+</div>`}
+
+// SINISTRO — DETALHE
+function rSinistroDetalhe(){
+  return`<div class="scr" style="background:var(--navy)">
+  ${sb(true)}
+  ${nb({back:'go-sinistro',d:true,cancel:false,title:'Detalhar ocorrência'})}
+  <div class="scrl" style="padding:0 20px 40px">
+    <div style="margin-bottom:24px">
+      <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:6px">Nos conte o que houve</div>
+      <div style="font-size:14px;color:var(--muted)">Quanto mais detalhes, mais rápido processamos</div>
+    </div>
+    <div class="iw" style="margin-bottom:14px">
+      <div class="ilbl">DATA DA OCORRÊNCIA</div>
+      <input class="inp" id="sin-data" type="text" inputmode="numeric" placeholder="DD/MM/AAAA">
+    </div>
+    <div class="iw" style="margin-bottom:14px">
+      <div class="ilbl">LOCAL</div>
+      <input class="inp" id="sin-local" type="text" placeholder="Ex: Av. Paulista, 1000 — São Paulo, SP">
+    </div>
+    <div style="background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:14px">
+      <div class="ilbl" style="margin-bottom:10px">DESCRIÇÃO DETALHADA</div>
+      <textarea id="sin-desc" style="background:none;border:none;color:#fff;font-size:15px;width:100%;height:120px;resize:none;outline:none;font-family:inherit;line-height:1.5" placeholder="Descreva o que aconteceu com o máximo de detalhes possível..."></textarea>
+    </div>
+    <div style="background:rgba(70,239,128,.05);border:2px dashed rgba(70,239,128,.2);border-radius:16px;padding:22px;text-align:center;cursor:pointer;margin-bottom:20px" id="upload-area" data-a="upload-foto">
+      <div style="width:48px;height:48px;border-radius:14px;background:rgba(70,239,128,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">${ico('doc',24,'#46EF80')}</div>
+      <div style="font-size:14px;font-weight:700;color:#46EF80">Adicionar fotos e documentos</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">JPG, PNG, PDF — até 10 MB</div>
+    </div>
+    <button class="btn btn-neon" data-a="go-sinistro-confirm">Enviar ocorrência</button>
+    <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--muted)">Prazo médio de análise: 2 dias úteis</div>
+  </div>
+</div>`}
+
+// SINISTRO — CONFIRMAÇÃO / TRACKING
+function rSinistroConfirm(){
+  const num='SIN-'+String(Date.now()).slice(-6);
+  const steps=[
+    {n:'Ocorrência registrada',sub:'Protocolo gerado com sucesso',done:true,t:'Agora'},
+    {n:'Em análise',sub:'Nossa equipe está avaliando',done:false,t:'Até 24h'},
+    {n:'Documentação',sub:'Pode ser solicitada por WhatsApp',done:false,t:'Em breve'},
+    {n:'Indenização',sub:'Pagamento após aprovação',done:false,t:'Em breve'},
+  ];
+  return`<div class="scr" style="background:var(--surf)">
+  ${sb(false)}
+  ${nb({back:'go-home',d:false,cancel:false,title:'Sinistro aberto'})}
+  <div class="scrl" style="padding:16px 20px 60px">
+    <div style="background:var(--navy);border-radius:20px;padding:28px;text-align:center;margin-bottom:16px">
+      <div class="ci" style="width:72px;height:72px;margin:0 auto 18px">
+        <svg viewBox="0 0 72 72" fill="none" style="width:72px;height:72px"><circle cx="36" cy="36" r="36" fill="rgba(70,239,128,.12)"/><circle cx="36" cy="36" r="25" fill="rgba(70,239,128,.22)"/><circle cx="36" cy="36" r="16" fill="#46EF80"/><path d="M24 36l9 9 15-18" stroke="#002430" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="font-size:21px;font-weight:800;color:#fff;margin-bottom:6px">Sinistro aberto!</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.5)">Protocolo</div>
+      <div style="font-size:20px;font-weight:900;color:#46EF80;letter-spacing:.05em;margin-top:4px">${num}</div>
+    </div>
+    <div style="background:#fff;border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:var(--card-sh)">
+      <div style="font-size:12px;font-weight:700;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px">Acompanhamento</div>
+      ${steps.map((s,i)=>`<div style="display:flex;gap:14px;align-items:flex-start${i<3?';margin-bottom:4px':''}">
+        <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:28px">
+          <div style="width:28px;height:28px;border-radius:50%;background:${s.done?'var(--teal)':'rgba(0,36,48,.06)'};border:2px solid ${s.done?'var(--teal)':'rgba(0,36,48,.12)'};display:flex;align-items:center;justify-content:center">
+            ${s.done?`<svg viewBox="0 0 24 24" fill="none" style="width:13px;height:13px"><path d="M5 12l5 5L19 7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>`:`<div style="width:7px;height:7px;border-radius:50%;background:rgba(0,36,48,.15)"></div>`}
+          </div>
+          ${i<3?`<div style="width:2px;height:24px;background:${s.done?'var(--teal)':'rgba(0,36,48,.08)'};margin:3px 0"></div>`:''}
+        </div>
+        <div style="padding-bottom:${i<3?'4px':'0'}">
+          <div style="font-size:14px;font-weight:700;color:${s.done?'var(--txt1)':'var(--txt3)'}">${s.n}</div>
+          <div style="font-size:12px;color:var(--txt3);margin-top:1px">${s.sub} · ${s.t}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div style="background:rgba(39,153,137,.06);border:1px solid rgba(39,153,137,.15);border-radius:14px;padding:14px 16px;font-size:13px;color:var(--teal);line-height:1.55;margin-bottom:16px">
+      Você receberá atualizações em tempo real pelo WhatsApp cadastrado. Guarde o protocolo <strong>${num}</strong> para consultas.
+    </div>
+    <button class="btn btn-neon" data-a="go-home">Voltar ao início</button>
+  </div>
+</div>`}
+
+// TERMOS DE CONTRATAÇÃO
+function rTermos(){
+  return`<div class="scr" style="background:var(--surf)">
+  ${sb(false)}
+  ${nb({back:'go-result',d:false,cancel:true,title:'Termos de contratação'})}
+  <div style="flex:1;overflow-y:auto;padding:20px 24px;-webkit-overflow-scrolling:touch" id="termos-scroll">
+    <div style="font-size:17px;font-weight:800;color:var(--txt1);margin-bottom:4px">Condições gerais do seguro</div>
+    <div style="font-size:12px;color:var(--txt3);margin-bottom:20px">Registro SUSEP nº 10.001.234-5 · Leia com atenção antes de contratar</div>
+    ${['Objeto do seguro e coberturas','Exclusões e franquias','Prazo e renovação automática','Cancelamento e carência','Sinistros e indenizações','Proteção de dados (LGPD)'].map((sec,i)=>`
+    <div style="margin-bottom:20px">
+      <div style="font-size:14px;font-weight:800;color:var(--txt1);margin-bottom:8px">${i+1}. ${sec}</div>
+      <div style="font-size:13px;color:var(--txt2);line-height:1.75">A Você Seguradora, inscrita no Registro SUSEP nº 10.001.234-5, compromete-se a honrar as coberturas especificadas mediante o pagamento regular do prêmio. O segurado declara estar ciente das condições gerais estabelecidas neste instrumento, nos termos da Circular SUSEP nº 321/06 e demais regulamentações vigentes. As coberturas são válidas para o território nacional, salvo disposição contrária nas Condições Especiais. O prazo de carência é de 30 dias para sinistros naturais e 0 dias para colisão.</div>
+    </div>`).join('')}
+    <div style="height:20px"></div>
+  </div>
+  <div style="padding:16px 24px 48px;flex-shrink:0;background:#fff;border-top:1px solid var(--border)">
+    <div id="termos-check" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;cursor:pointer">
+      <div id="chk-box" style="width:22px;height:22px;border-radius:6px;border:2px solid rgba(0,36,48,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .2s;background:#fff"></div>
+      <span style="font-size:13px;color:var(--txt2);line-height:1.5">Li e concordo com as condições gerais e com a <strong style="color:var(--txt1)">Política de Privacidade</strong> da Você Seguradora</span>
+    </div>
+    <button class="btn btn-neon" id="btn-aceitar" disabled style="opacity:.4;transition:opacity .3s">Aceitar e continuar para o pagamento</button>
+  </div>
+</div>`}
+
+// ERRO DE PAGAMENTO
+function rPayError(){
+  return`<div class="scr" style="background:var(--navy);align-items:center;justify-content:center">
+  ${sb(true)}
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;text-align:center">
+    <div style="width:80px;height:80px;border-radius:50%;background:rgba(220,38,38,.12);border:2px solid rgba(220,38,38,.25);display:flex;align-items:center;justify-content:center;margin-bottom:28px;animation:shieldIn .5s ease both">
+      <svg viewBox="0 0 24 24" fill="none" style="width:36px;height:36px"><line x1="18" y1="6" x2="6" y2="18" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </div>
+    <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:10px">Pagamento recusado</div>
+    <div style="font-size:15px;color:var(--muted);line-height:1.6;margin-bottom:36px">Sua operadora não autorizou essa transação. Verifique os dados ou tente outro método de pagamento.</div>
+    <button class="btn btn-neon" data-a="go-payment" style="width:100%;margin-bottom:12px">Tentar outro método</button>
+    <button class="btn btn-ghost" data-a="go-result" style="width:100%">Voltar à cotação</button>
+  </div>
+</div>`}
+
+// CATEGORIES
+function rCats(){
+  const cards=CATS.map((c,idx)=>{
+    const isGreen=c.color==='#46EF80';
+    const rgb=isGreen?'70,239,128':'39,153,137';
+    return`<div data-cid="${c.id}" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:20px 18px;cursor:pointer;position:relative;overflow:hidden;transition:transform .14s,border-color .14s;animation:fadeUp .4s ease ${idx*.06}s both" ontouchstart="this.style.transform='scale(.96)';this.style.borderColor='rgba(${rgb},.4)'" ontouchend="this.style.transform='';this.style.borderColor='rgba(255,255,255,.07)'" onmousedown="this.style.transform='scale(.96)'" onmouseup="this.style.transform=''">
+      <div style="position:absolute;bottom:-18px;right:-18px;width:72px;height:72px;border-radius:50%;background:rgba(${rgb},.07);pointer-events:none"></div>
+      <div style="width:46px;height:46px;border-radius:14px;background:rgba(${rgb},.1);display:flex;align-items:center;justify-content:center;margin-bottom:14px;border:1px solid rgba(${rgb},.18)">
+        ${ico(c.icon,23,c.color)}
+      </div>
+      <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:5px;line-height:1.2;letter-spacing:-.01em">${c.name}</div>
+      <div style="font-size:11.5px;color:rgba(255,255,255,.38);margin-bottom:16px;line-height:1.5;font-weight:400">${c.sub}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:11px;font-weight:700;color:rgba(${rgb},1);background:rgba(${rgb},.1);padding:4px 9px;border-radius:6px;letter-spacing:.03em">${c.prods.length} produtos</div>
+        <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;color:rgba(255,255,255,.25)"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+  return`<div class="scr" style="background:var(--navy)">
+${sb(true)}
+<div style="padding:4px 24px 20px;flex-shrink:0">
+  <div style="font-size:11px;font-weight:700;color:rgba(70,239,128,.6);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Nova cotação</div>
+  <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.2;margin-bottom:6px">O que deseja<br>proteger?</div>
+  <div style="font-size:14px;color:rgba(255,255,255,.35);font-weight:400">Escolha uma categoria abaixo</div>
+</div>
+<div class="scrl" style="padding:0 16px 32px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${cards}</div>
+</div>
+</div>`}
+
+// PRODUCTS in category
+function rProds(catId){
+  const cat=CATS.find(c=>c.id===catId);
+  const cards=cat.prods.map(pid=>{
+    const p=PRODS[pid];
+    return`<div data-a="sel-prod" data-pid="${pid}" style="background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:20px;padding:20px;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;gap:16px;transition:all .18s" onmousedown="this.style.borderColor='#46EF80'" onmouseup="this.style.borderColor='rgba(255,255,255,.08)'" ontouchend="this.style.borderColor='rgba(255,255,255,.08)'">
+      <div style="width:52px;height:52px;border-radius:14px;background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        ${ico(p.icon,26,'#46EF80')}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:3px">${p.name}</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.4">${p.sub}</div>
+        <div style="font-size:13px;font-weight:700;color:#46EF80;margin-top:8px">A partir de ${p.price.m}/mês →</div>
+      </div>
+    </div>`;
+  }).join('');
+  return`<div class="scr" style="background:var(--navy)">
+${sb(true)}
+${nb({back:'go-cats',d:true,cancel:false,title:cat.name})}
+<div class="scrl" style="padding:0 20px 32px">${cards}</div>
+</div>`}
+
+// FORM (text input)
+function rFormTxt(stepKey){
+  const cfg=FC[stepKey];
+  const flow=gFlow();
+  const idx=flow.indexOf(stepKey);
+  const p=gP();
+  const pct=((idx+1)/(flow.length+1))*100;
+  const tips=(cfg.tips||[]).map(t=>`<div class="infr"><div class="infd"></div><div class="inft">${t}</div></div>`).join('');
+  return`<div class="scr" style="background:var(--navy)">
+${sb(true)}
+${nb({back:'form-back',d:true})}
+<div class="prog"><div class="prog-f" style="width:${pct.toFixed(0)}%"></div></div>
+${stepDots(flow,idx)}
+<div style="padding:0 24px;flex:1;overflow-y:auto">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <div style="width:28px;height:28px;border-radius:8px;background:rgba(70,239,128,.1);display:flex;align-items:center;justify-content:center">${ico(p.icon,16,'#46EF80')}</div>
+    <div style="font-size:12px;font-weight:700;color:#46EF80;letter-spacing:.08em;text-transform:uppercase">${p.name} · ${idx+1}/${flow.length}</div>
+  </div>
+  <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.25;margin-bottom:8px">${cfg.q}</div>
+  <div style="font-size:14px;color:var(--muted);margin-bottom:28px">${cfg.sub}</div>
+  <div class="iw">
+    <div class="ilbl">${cfg.lbl}</div>
+    <input class="inp" id="finp" type="text" inputmode="${cfg.im||'text'}" placeholder="${cfg.ph}" value="${S.form[cfg.key]||''}" autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>
+  ${tips?`<div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">${tips}</div>`:''}
+  <div class="sec-badge" style="margin-top:20px">${ico('lock',14,'#46EF80')} <span>Dados protegidos pela LGPD</span></div>
+</div>
+<div style="padding:20px 24px 44px;flex-shrink:0">
+  <button class="btn btn-neon" id="btn-fnext" data-sk="${stepKey}">Continuar</button>
+</div>
+</div>`}
+
+// FORM (select)
+function rFormSel(stepKey){
+  const cfg=FC[stepKey];
+  const flow=gFlow();
+  const idx=flow.indexOf(stepKey);
+  const p=gP();
+  const pct=((idx+1)/(flow.length+1))*100;
+  const sel=S.form[stepKey]||'';
+  const opts=cfg.opts.map(o=>`<div class="opt${sel===o.v?' sel':''}" data-sv="${o.v}" data-sk="${stepKey}">
+    ${o.ico?`<div class="opt-ico">${ico(o.ico,22,'#46EF80')}</div>`:''}
+    <div class="opt-info"><div class="opt-name">${o.n}</div><div class="opt-sub">${o.s||''}</div></div>
+    <div class="opt-chk"><span class="opt-chki">✓</span></div>
+  </div>`).join('');
+  return`<div class="scr" style="background:var(--navy)">
+${sb(true)}
+${nb({back:'form-back',d:true})}
+<div class="prog"><div class="prog-f" style="width:${pct.toFixed(0)}%"></div></div>
+${stepDots(flow,idx)}
+<div style="padding:0 24px;flex:1;overflow-y:auto">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <div style="width:28px;height:28px;border-radius:8px;background:rgba(70,239,128,.1);display:flex;align-items:center;justify-content:center">${ico(p.icon,16,'#46EF80')}</div>
+    <div style="font-size:12px;font-weight:700;color:#46EF80;letter-spacing:.08em;text-transform:uppercase">${p.name} · ${idx+1}/${flow.length}</div>
+  </div>
+  <div style="font-size:26px;font-weight:800;color:#fff;line-height:1.25;margin-bottom:8px">${cfg.q}</div>
+  <div style="font-size:14px;color:var(--muted);margin-bottom:28px">${cfg.sub}</div>
+  <div style="display:flex;flex-direction:column;gap:12px">${opts}</div>
+</div>
+<div style="padding:20px 24px 44px;flex-shrink:0">
+  <button class="btn btn-neon" id="btn-snext" data-sk="${stepKey}" ${!sel?'disabled':''}>Continuar</button>
+</div>
+</div>`}
+
+// LOADING
+function rLoading(){
+  const p=gP();
+  const items=['Analisando seu perfil de risco','Calculando a melhor cobertura','Comparando planos disponíveis'];
+  return`<div class="scr" style="background:var(--navy);align-items:center;justify-content:center">
+${sb(true)}
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;text-align:center;width:100%">
+  <div style="width:100px;height:110px;margin-bottom:40px" class="pg">
+    <svg viewBox="0 0 80 90" style="width:100px;height:110px" fill="none">
+      <path d="M40 4L8 16V40C8 59 22 75 40 80C58 75 72 59 72 40V16L40 4Z" fill="rgba(70,239,128,.12)"/>
+      <path d="M40 10L14 20V40C14 56 26 70 40 74C54 70 66 56 66 40V20L40 10Z" fill="rgba(70,239,128,.3)"/>
+      <path d="M40 16L20 25V40C20 52 30 64 40 67C50 64 60 52 60 40V25L40 16Z" fill="rgba(70,239,128,.55)"/>
+      <path d="M28 41L36 49L52 32" stroke="#46EF80" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div style="font-size:12px;font-weight:800;color:#46EF80;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px">Calculando</div>
+  <div style="font-size:28px;font-weight:800;color:#fff;line-height:1.3;margin-bottom:40px">Sua cotação<br>está quase pronta</div>
+  <div style="width:100%;text-align:left">
+    ${items.map((it,i)=>`<div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;color:var(--muted);opacity:0;animation:fadeUp .4s ease ${(i+1)*.6}s both">
+      <div id="lck${i}" style="width:28px;height:28px;border-radius:50%;background:rgba(70,239,128,.08);border:1px solid rgba(70,239,128,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:800;color:#46EF80;transition:all .3s">·</div>
+      ${it}
+    </div>`).join('')}
+  </div>
+</div>
+</div>`}
+
+// RESULT
+function rResult(){
+  const p=gP();const pr=p.price;
+  const price=S.plan==='mensal'?pr.m:pr.a;
+  const covs=COVS[S.prod];
+  const covHTML=covs.map(c=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06)">
+    <div style="width:22px;height:22px;flex-shrink:0">${ico('check',22,'#279989')}</div>
+    <div style="font-size:14px;color:var(--txt1);line-height:1.4">${c}</div>
+  </div>`).join('');
+  return`<div class="scr" style="background:var(--surf);overflow-y:auto">
+${sb(false)}
+${nb({back:'go-cats',d:false,cancel:true})}
+<div style="padding:0 24px 8px;flex-shrink:0">
+  <div style="font-size:13px;color:var(--txt2);font-weight:500;margin-bottom:4px">Cotação para</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,36,48,.08);display:flex;align-items:center;justify-content:center">${ico(p.icon,22,'#002430')}</div>
+    <div style="font-size:22px;font-weight:800;color:var(--txt1)">${p.name}</div>
+  </div>
+</div>
+<div style="margin:10px 20px 12px;flex-shrink:0">
+  <div class="ptgl">
+    <button class="ptab${S.plan==='mensal'?' active':''}" data-plan="mensal">Mensal</button>
+    <button class="ptab${S.plan==='anual'?' active':''}" data-plan="anual">Anual (−28%)</button>
+  </div>
+</div>
+<div style="margin:0 20px 16px;background:var(--navy);border-radius:24px;padding:24px;position:relative;overflow:hidden;flex-shrink:0">
+  <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(70,239,128,.05)"></div>
+  <div style="position:absolute;bottom:-30px;left:-30px;width:100px;height:100px;border-radius:50%;background:rgba(39,153,137,.06)"></div>
+  <div style="display:inline-flex;align-items:center;gap:6px;background:#46EF80;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:800;color:var(--navy);margin-bottom:20px">${pr.badge}</div>
+  <div style="font-size:46px;font-weight:800;color:#46EF80;line-height:1;letter-spacing:-1.5px">${price}</div>
+  <div style="font-size:14px;color:rgba(255,255,255,.45);margin:6px 0">/ mês${S.plan==='anual'?' · cobrado anualmente':''}</div>
+  <div style="padding-top:14px;margin-top:14px;border-top:1px solid rgba(255,255,255,.08)">
+    ${S.plan==='mensal'?`<span style="font-size:13px;color:rgba(255,255,255,.4)">Cancele quando quiser · Sem multa</span>`:
+    `<span style="font-size:13px;color:#46EF80;font-weight:700">Total anual: ${pr.at} · Economize 28%!</span>`}
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+    <div style="font-size:12px;color:rgba(255,255,255,.45)">Cobertura de</div>
+    <div style="font-size:13px;font-weight:800;color:#fff">${pr.cov}</div>
+  </div>
+</div>
+<div style="padding:0 24px 16px">
+  <div style="font-size:16px;font-weight:800;color:var(--txt1);margin-bottom:12px">O que está incluso</div>
+  ${covHTML}
+</div>
+<div style="padding:0 24px;margin-bottom:12px">
+  <div style="background:#fff;border-radius:16px;padding:16px 20px;display:flex;gap:12px;align-items:center">
+    <div>${ico('lock',18,'#279989')}</div>
+    <div style="font-size:12px;color:var(--txt2);line-height:1.4">Seus dados são protegidos com criptografia de ponta a ponta. Autorizada pela SUSEP.</div>
+  </div>
+</div>
+<div style="padding:0 24px 48px;flex-shrink:0">
+  <button class="btn btn-neon" data-a="go-termos" style="margin-bottom:12px">Contratar agora</button>
+  <div style="text-align:center;font-size:13px;color:var(--txt3);font-weight:500">Cancelamento fácil · Sem burocracia</div>
+</div>
+</div>`}
+
+// PAYMENT METHOD SELECTION
+function rPayment(){
+  const p=gP();const pr=p.price;
+  const price=S.plan==='mensal'?pr.m:pr.a;
+  const methods=[
+    {id:'pix',icon:'pix',name:'PIX',sub:'Aprovação instantânea',badge:'Mais rápido',col:'#46EF80'},
+    {id:'card',icon:'credit',name:'Cartão de Crédito',sub:'Parcelamento em até 12x',badge:'',col:'#46EF80'},
+    {id:'boleto',icon:'doc',name:'Boleto Bancário',sub:'Vencimento em 3 dias úteis',badge:'',col:'#46EF80'},
+  ];
+  const cards=methods.map(m=>`<div data-a="sel-pay" data-pm="${m.id}" style="background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.08);border-radius:20px;padding:20px;cursor:pointer;display:flex;align-items:center;gap:16px;transition:all .18s;margin-bottom:12px">
+    <div style="width:52px;height:52px;border-radius:14px;background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.22);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(m.icon,26,'#46EF80')}</div>
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:16px;font-weight:800;color:#fff">${m.name}</div>
+        ${m.badge?`<div style="background:#46EF80;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:800;color:var(--navy)">${m.badge}</div>`:''}
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-top:3px">${m.sub}</div>
+    </div>
+    <div style="color:var(--muted);font-size:18px">→</div>
+  </div>`).join('');
+  return`<div class="scr" style="background:var(--navy)">
+${sb(true)}
+${nb({back:'go-result',d:true,cancel:false,title:'Pagamento'})}
+<div style="padding:0 20px 24px;flex-shrink:0">
+  <div style="background:rgba(70,239,128,.06);border:1px solid rgba(70,239,128,.15);border-radius:16px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:13px;color:var(--muted)">Valor do plano</div><div style="font-size:22px;font-weight:800;color:#46EF80;margin-top:2px">${price}/mês</div></div>
+    <div style="text-align:right"><div style="font-size:12px;color:var(--muted)">${p.name}</div><div style="font-size:12px;font-weight:700;color:#fff;margin-top:2px">Cobertura: ${pr.cov}</div></div>
+  </div>
+</div>
+<div style="padding:0 20px 32px" class="scrl">
+  <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:16px">Como deseja pagar?</div>
+  ${cards}
+</div>
+</div>`}
+
+// PIX PAYMENT
+function rPayPix(){
+  const p=gP();const pr=p.price;
+  const price=S.plan==='mensal'?pr.m:pr.a;
+  const pixKey='09.583.712/0001-90';
+  // Fake QR code SVG
+  const qr=generateQR();
+  return`<div class="scr" style="background:var(--navy)">
+${sb(true)}
+${nb({back:'go-payment',d:true,cancel:false,title:'Pagar com PIX'})}
+<div class="scrl" style="padding:0 24px 40px">
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-size:32px;font-weight:800;color:#46EF80">${price}</div>
+    <div style="font-size:14px;color:var(--muted);margin-top:4px">${p.name}</div>
+  </div>
+  <div style="background:#fff;border-radius:20px;padding:24px;display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+    ${qr}
+  </div>
+  <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 20px;margin-bottom:16px">
+    <div style="font-size:11px;font-weight:700;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Chave PIX CNPJ</div>
+    <div style="font-size:14px;font-weight:600;color:#fff;word-break:break-all;margin-bottom:12px">${pixKey}</div>
+    <button onclick="this.textContent='Copiado! ✓';this.style.color='#46EF80';setTimeout(()=>{this.textContent='Copiar chave PIX';this.style.color='';},2000)" style="background:rgba(70,239,128,.1);border:1px solid rgba(70,239,128,.2);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;color:#46EF80;cursor:pointer;font-family:inherit;width:100%">Copiar chave PIX</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;background:rgba(70,239,128,.06);border:1px solid rgba(70,239,128,.15);border-radius:12px;padding:14px;margin-bottom:20px">
+    <div style="font-size:24px">⏱️</div>
+    <div><div style="font-size:13px;font-weight:700;color:#fff">QR Code válido por 30 minutos</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Após o pagamento, sua apólice é emitida automaticamente</div></div>
+  </div>
+  <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:24px;line-height:1.5">Abra o app do seu banco, selecione <strong style="color:#fff">PIX → Pagar</strong> e escaneie o QR Code ou use a chave acima.</div>
+  <button class="btn btn-neon" data-a="go-success">Já realizei o pagamento</button>
+</div>
+</div>`}
+
+function generateQR(){
+  // Generate realistic-looking QR code SVG (fake but visually convincing)
+  const s=21;const cell=8;
+  let rects='';
+  // Fixed finder patterns
+  const fp=(ox,oy)=>{
+    rects+=`<rect x="${ox*cell}" y="${oy*cell}" width="${7*cell}" height="${7*cell}" fill="#141416" rx="2"/>`;
+    rects+=`<rect x="${(ox+1)*cell}" y="${(oy+1)*cell}" width="${5*cell}" height="${5*cell}" fill="white" rx="1"/>`;
+    rects+=`<rect x="${(ox+2)*cell}" y="${(oy+2)*cell}" width="${3*cell}" height="${3*cell}" fill="#141416" rx="1"/>`;
+  };
+  fp(0,0);fp(14,0);fp(0,14);
+  // Timing patterns
+  for(let i=8;i<13;i++){if(i%2===0){rects+=`<rect x="${i*cell}" y="${6*cell}" width="${cell}" height="${cell}" fill="#141416"/>`;rects+=`<rect x="${6*cell}" y="${i*cell}" width="${cell}" height="${cell}" fill="#141416"/>`;}}
+  // Data modules (deterministic from seed)
+  let seed=12345;
+  for(let y=0;y<s;y++){for(let x=0;x<s;x++){
+    if((x<8&&y<8)||(x>12&&y<8)||(x<8&&y>12))continue;
+    if(x===6||y===6)continue;
+    seed=(seed*1103515245+12345)&0x7fffffff;
+    if(seed%2===0)rects+=`<rect x="${x*cell}" y="${y*cell}" width="${cell}" height="${cell}" fill="#141416"/>`;
+  }}
+  const sz=s*cell;
+  return`<svg viewBox="0 0 ${sz+16} ${sz+16}" style="width:220px;height:220px" xmlns="http://www.w3.org/2000/svg"><rect width="${sz+16}" height="${sz+16}" fill="white" rx="4"/><g transform="translate(8,8)">${rects}</g></svg>`;
+}
+
+// CREDIT CARD PAYMENT
+function rPayCard(){
+  const p=gP();const pr=p.price;
+  const price=S.plan==='mensal'?pr.m:pr.a;
+  const num=S.cardForm.num||'';
+  const name=S.cardForm.name||'';
+  const exp=S.cardForm.exp||'';
+  const cvv=S.cardForm.cvv||'';
+  const brand=detectBrand(num);
+  const installs=[1,2,3,6,12].map(n=>{
+    const val=parseFloat(price.replace(/[^\d,]/g,'').replace(',','.'))/n;
+    const fval='R$ '+(val).toFixed(2).replace('.',',');
+    return`<option value="${n}">${n}x de ${fval}${n===1?' (sem juros)':n<=3?' sem juros':' com juros'}</option>`;
+  }).join('');
+  return`<div class="scr" style="background:var(--navy)">
+${sb(true)}
+${nb({back:'go-payment',d:true,cancel:false,title:'Cartão de Crédito'})}
+<div class="scrl" style="padding:0 20px 40px">
+  <div class="pcard-scene" id="card-scene">
+    <div class="pcard${S.cvvFocus?' flip':''}" id="pcard">
+      <div class="pcard-f">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <svg viewBox="0 0 80 25" style="width:60px;height:20px"><rect width="80" height="25" rx="4" fill="rgba(70,239,128,.3)"/><rect x="4" y="4" width="20" height="17" rx="2" fill="rgba(70,239,128,.6)"/><rect x="28" y="8" width="8" height="9" rx="1" fill="rgba(70,239,128,.5)"/></svg>
+          <div style="font-size:16px;font-weight:800;color:rgba(70,239,128,.8)">${brand||'VOCÊ'}</div>
+        </div>
+        <div style="margin-top:24px;font-size:20px;font-weight:700;color:#fff;letter-spacing:.18em;font-family:monospace">${num?num.padEnd(19,'·'):'···· ···· ···· ····'}</div>
+        <div style="display:flex;justify-content:space-between;margin-top:16px">
+          <div><div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase">Nome</div><div style="font-size:13px;font-weight:700;color:#fff;margin-top:2px">${name||'SEU NOME'}</div></div>
+          <div><div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase">Validade</div><div style="font-size:13px;font-weight:700;color:#fff;margin-top:2px">${exp||'MM/AA'}</div></div>
+        </div>
+        <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(70,239,128,.06)"></div>
+      </div>
+      <div class="pcard-b">
+        <div style="width:100%;height:36px;background:rgba(0,0,0,.4);margin-top:12px"></div>
+        <div style="margin-top:16px;display:flex;justify-content:flex-end">
+          <div style="background:rgba(255,255,255,.15);border-radius:6px;padding:8px 16px;font-size:18px;font-weight:700;color:#fff;letter-spacing:.1em;font-family:monospace">${cvv||'•••'}</div>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:8px;text-align:right">CVV</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px">
+    <div class="iw">
+      <div class="ilbl">NÚMERO DO CARTÃO</div>
+      <input class="inp" id="cc-num" type="tel" inputmode="numeric" placeholder="0000 0000 0000 0000" value="${num}" maxlength="19" autocomplete="cc-number">
+    </div>
+    <div class="iw">
+      <div class="ilbl">NOME NO CARTÃO</div>
+      <input class="inp" id="cc-name" type="text" placeholder="Como aparece no cartão" value="${name}" style="text-transform:uppercase" autocomplete="cc-name">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="iw">
+        <div class="ilbl">VALIDADE</div>
+        <input class="inp" id="cc-exp" type="tel" inputmode="numeric" placeholder="MM/AA" value="${exp}" maxlength="5" autocomplete="cc-exp">
+      </div>
+      <div class="iw">
+        <div class="ilbl">CVV</div>
+        <input class="inp" id="cc-cvv" type="tel" inputmode="numeric" placeholder="•••" value="${cvv}" maxlength="4" autocomplete="cc-csc">
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:16px;padding:14px 20px">
+      <div class="ilbl" style="margin-bottom:10px">PARCELAMENTO</div>
+      <select id="cc-install" style="background:none;border:none;color:#fff;font-size:16px;font-weight:700;width:100%;outline:none;cursor:pointer;font-family:inherit">${installs}</select>
+    </div>
+  </div>
+  <div class="sec-badge" style="margin-bottom:20px">${ico('lock',14,'#46EF80')} <span>Pagamento seguro com criptografia SSL</span></div>
+  <button class="btn btn-neon" id="btn-pay-card">Pagar ${price}</button>
+</div>
+</div>`}
+
+function detectBrand(num){
+  num=num.replace(/\s/g,'');
+  if(/^4/.test(num))return'VISA';
+  if(/^5[1-5]/.test(num))return'MASTERCARD';
+  if(/^636/.test(num))return'ELO';
+  if(/^3[47]/.test(num))return'AMEX';
+  return'';
+}
+
+// BOLETO
+function rPayBoleto(){
+  const p=gP();const pr=p.price;
+  const price=S.plan==='mensal'?pr.m:pr.a;
+  const due=new Date();due.setDate(due.getDate()+3);
+  const dueStr=due.toLocaleDateString('pt-BR');
+  const barcode=generateBarcode();
+  const line='00190.50068 20400.000012 34000.140001 3 00000000'+price.replace(/[^\d]/g,'').padStart(10,'0');
+  return`<div class="scr" style="background:var(--navy)">
+${sb(true)}
+${nb({back:'go-payment',d:true,cancel:false,title:'Boleto Bancário'})}
+<div class="scrl" style="padding:0 24px 40px">
+  <div style="background:#fff;border-radius:20px;padding:24px;margin-bottom:20px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div><div style="font-size:13px;color:var(--txt2)">Você Seguradora</div><div style="font-size:22px;font-weight:800;color:var(--txt1);margin-top:2px">${price}</div></div>
+      <div style="text-align:right"><div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em">Vencimento</div><div style="font-size:14px;font-weight:700;color:var(--txt1);margin-top:2px">${dueStr}</div></div>
+    </div>
+    <div style="margin:16px 0">${barcode}</div>
+    <div style="font-size:11px;color:var(--txt1);word-break:break-all;font-family:monospace;line-height:1.6;padding:12px;background:#F0F4F6;border-radius:8px">${line}</div>
+  </div>
+  <button onclick="this.textContent='Linha copiada! ✓';this.style.background='rgba(70,239,128,.15)';setTimeout(()=>{this.textContent='Copiar linha digitável';this.style.background='';},2000)" style="background:rgba(70,239,128,.08);border:1.5px solid rgba(70,239,128,.25);border-radius:14px;padding:14px;font-size:14px;font-weight:700;color:#46EF80;cursor:pointer;font-family:inherit;width:100%;margin-bottom:12px">Copiar linha digitável</button>
+  <button onclick="this.textContent='PDF baixando...'" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;width:100%;margin-bottom:20px">Baixar PDF do boleto</button>
+  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px">
+    <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px">⚠️ Informações importantes</div>
+    <div style="font-size:12px;color:var(--txt2);line-height:1.7">• Pague em qualquer banco, lotérica ou app<br>• Processamento em até 1 dia útil após o pagamento<br>• Sua apólice será ativada automaticamente<br>• Em caso de não pagamento, o boleto é cancelado</div>
+  </div>
+  <button class="btn btn-neon" data-a="go-success" style="margin-top:20px">Já paguei o boleto</button>
+</div>
+</div>`}
+
+function generateBarcode(){
+  let bars='';let x=0;
+  const pattern=[3,2,1,2,1,2,3,1,2,1,3,1,2,2,1,2,1,3,1,2,2,1,3,2,1,2,1,3,2,1,2,1,2,3,1,2,1,2,1,3,2,2,1,2,3,1,2,1,2,2,1,3,1,2,1,2,2,3,1,2,1];
+  pattern.forEach((w,i)=>{if(i%2===0)bars+=`<rect x="${x}" y="0" width="${w*3}" height="60" fill="#141416"/>`;x+=w*3;});
+  return`<svg viewBox="0 0 ${x} 60" style="width:100%;height:60px" xmlns="http://www.w3.org/2000/svg"><rect width="${x}" height="60" fill="white"/>${bars}</svg>`;
+}
+
+// SUCCESS
+function rSuccess(){
+  const p=gP();const pr=p.price;
+  const price=S.plan==='mensal'?pr.m:pr.a;
+  const payLabel={pix:'PIX',card:'Cartão de Crédito',boleto:'Boleto'}[S.payMethod]||'';
+  return`<div class="scr" style="background:var(--navy);align-items:center;justify-content:center">
+${sb(true)}
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;text-align:center">
+  <div style="width:100px;height:100px;margin-bottom:32px" class="ci">
+    <svg viewBox="0 0 100 100" fill="none" style="width:100px;height:100px">
+      <circle cx="50" cy="50" r="50" fill="rgba(70,239,128,.12)"/>
+      <circle cx="50" cy="50" r="38" fill="rgba(70,239,128,.22)"/>
+      <circle cx="50" cy="50" r="26" fill="#46EF80"/>
+      <path d="M34 50l12 12 20-22" stroke="#002430" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div style="font-size:28px;font-weight:800;color:#fff;line-height:1.25;margin-bottom:12px">Seguro contratado<br>com sucesso! 🎉</div>
+  <div style="font-size:15px;color:var(--muted);line-height:1.6;margin-bottom:32px">Sua apólice foi enviada para o WhatsApp cadastrado.</div>
+  <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;width:100%;margin-bottom:32px;text-align:left">
+    ${[['Seguro',`${p.name}`],['Plano',S.plan==='mensal'?'Mensal':'Anual'],['Valor',`${price}/mês`],['Cobertura',pr.cov],['Pagamento',payLabel],['Status','● Ativo agora']].map(([k,v],i)=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:${i<5?'1px solid rgba(255,255,255,.06)':'none'}"><span style="font-size:13px;color:var(--muted)">${k}</span><span style="font-size:13px;font-weight:700;color:${i===5?'#46EF80':'#fff'}">${v}</span></div>`).join('')}
+  </div>
+  ${S.authed?'':`<div style="background:rgba(255,255,255,.05);border:1px solid rgba(70,239,128,.25);border-radius:16px;padding:18px;width:100%;margin-bottom:16px;text-align:left">
+    <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:4px">Vincule à sua conta</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:14px;line-height:1.5">Informe e-mail e CPF. Ao criar sua conta com este e-mail, esta apólice aparece automaticamente nela.</div>
+    <div class="iw" style="margin-bottom:10px"><div class="ilbl">E-MAIL</div><input class="inp" id="suc-email" type="email" inputmode="email" placeholder="voce@email.com"></div>
+    <div class="iw" style="margin-bottom:12px"><div class="ilbl">CPF</div><input class="inp" id="suc-cpf" type="tel" inputmode="numeric" placeholder="000.000.000-00"></div>
+    <div id="suc-msg" style="font-size:12px;min-height:16px;margin-bottom:8px;line-height:1.4"></div>
+    <button class="btn btn-neon" id="btn-vincular" style="height:48px">Salvar para minha conta</button>
+  </div>`}
+  <button class="btn btn-neon" data-a="go-home" style="width:100%">Ver minha apólice →</button>
+</div>
+</div>`}
+
+// HOME DASHBOARD
+// ===================== TELA INDICAÇÕES =====================
+function rIndicacoes(){
+  const name=S.form.name||'Kaique Arduini';
+  const tabs=[{ico:'house',lbl:'Início',tab:'home'},{ico:'shield',lbl:'Seguros',tab:'home'},{ico:'family',lbl:'Indicações',tab:'indicacoes'},{ico:'doc',lbl:'Conta',tab:'conta'}];
+  const tbar=`<div class="tbar">${tabs.map((t,i)=>`<div class="ti${i===2?' active':''}" data-tab="${t.tab}">
+    <div class="ti-pip"></div>
+    <div class="ti-ico">${ico(t.ico,24,i===2?'#279989':'#bbc8d0')}</div>
+    <div class="ti-lbl">${t.lbl}</div>
+  </div>`).join('')}</div>`;
+  const prods=[
+    {id:'auto',name:'Seguro Auto',sub:'Indique e ganhe 1 mês grátis'},
+    {id:'celular',name:'Seguro Celular',sub:'Indique e ganhe 1 mês grátis'},
+    {id:'vida',name:'Seguro Vida',sub:'Indique e ganhe 1 mês grátis'},
+    {id:'casa',name:'Casa Protegida+',sub:'Indique e ganhe 1 mês grátis'},
+  ];
+  return`<div class="scr" style="background:var(--surf)">
+${sb(false)}
+<div style="background:var(--navy);border-radius:0 0 40px 40px;padding:16px 24px 32px;flex-shrink:0">
+  <div style="font-size:26px;font-weight:900;color:#46EF80;letter-spacing:-1px">Você<span style="color:#fff">.</span></div>
+</div>
+<div class="scrl" style="padding:0 0 100px">
+  <div style="background:#fff;margin:0 20px;margin-top:-20px;border-radius:20px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,.08)">
+    <div style="width:52px;height:52px;background:#e8fdf3;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+      ${ico('family',28,'#46EF80')}
+    </div>
+    <div style="font-size:18px;font-weight:800;color:var(--txt1);line-height:1.4;margin-bottom:6px">Indique amigos que<br>você confia e <span style="color:#46EF80">ganhe meses de graça.</span></div>
+    <div style="font-size:14px;color:var(--txt2);margin-bottom:16px;line-height:1.6">Para cada amigo que contratar um seguro pelo seu link, você ganha 1 mês gratuito no seu plano.</div>
+    <button class="btn btn-neon" data-a="copy-link" style="font-size:14px">Copiar meu link de indicação</button>
+    <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--teal);font-weight:700;cursor:pointer" data-a="how-ref">Veja como funciona →</div>
+  </div>
+
+  <div style="padding:24px 20px 0">
+    <div style="font-size:11px;font-weight:800;color:var(--txt3);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase">INDICAR POR PRODUTO</div>
+    ${prods.map(p=>`
+    <div class="card-w" style="margin-bottom:10px;cursor:pointer" data-a="share-${p.id}">
+      <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--txt1)">${p.name}</div>
+          <div style="font-size:13px;color:var(--txt2);margin-top:2px">${p.sub}</div>
+        </div>
+        <div style="width:38px;height:38px;border-radius:50%;background:#e8fdf3;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          ${ico('bolt',18,'#46EF80')}
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>
+
+  <div style="margin:20px;padding:16px 20px;background:rgba(39,153,137,.08);border-radius:16px;border:1px solid rgba(39,153,137,.2)">
+    <div style="font-size:12px;font-weight:800;color:var(--teal);letter-spacing:.08em;margin-bottom:8px">SEU SALDO DE INDICAÇÕES</div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:28px;font-weight:900;color:var(--teal)">0</div>
+        <div style="font-size:12px;color:var(--teal);opacity:.8;margin-top:2px">indicações realizadas</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:20px;font-weight:900;color:#46EF80">R$ 0,00</div>
+        <div style="font-size:12px;color:var(--teal);opacity:.8;margin-top:2px">créditos acumulados</div>
+      </div>
+    </div>
+  </div>
+</div>
+${tbar}
+</div>`}
+
+// ===================== TELA CONTA =====================
+function rConta(){
+  const name=S.form.name||(S.profile&&S.profile.nome)||'Minha conta';
+  const _pf=S.profile||{};
+  const _req=['nome','cpf','telefone','cep','endereco','numero','bairro','cidade','uf'];
+  const profComplete=_req.every(k=>_pf[k]&&String(_pf[k]).trim());
+  const cTitle=profComplete?'Editar informações':'Complete suas informações';
+  const cSub=profComplete?'Atualize seu cadastro →':'Adicione endereço e documentos →';
+  const initials=name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  const tabs=[{ico:'house',lbl:'Início',tab:'home'},{ico:'shield',lbl:'Seguros',tab:'home'},{ico:'family',lbl:'Indicações',tab:'indicacoes'},{ico:'doc',lbl:'Conta',tab:'conta'}];
+  const tbar=`<div class="tbar">${tabs.map((t,i)=>`<div class="ti${i===3?' active':''}" data-tab="${t.tab}">
+    <div class="ti-pip"></div>
+    <div class="ti-ico">${ico(t.ico,24,i===3?'#279989':'#bbc8d0')}</div>
+    <div class="ti-lbl">${t.lbl}</div>
+  </div>`).join('')}</div>`;
+  const row=(icn,lbl,sub='',act='')=>`<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;border-bottom:1px solid #f0f2f5" data-a="${act||('menu-'+icn)}">
+    <div style="width:32px;height:32px;border-radius:10px;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(icn,17,'#002430')}</div>
+    <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--txt1)">${lbl}</div>${sub?`<div style="font-size:12px;color:var(--txt3);margin-top:1px">${sub}</div>`:''}</div>
+    <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;color:#bbb"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </div>`;
+  return`<div class="scr" style="background:#f5f7f9">
+${sb(false)}
+<div class="scrl" style="padding-bottom:100px">
+  <div style="padding:28px 20px 20px;text-align:center">
+    <div style="width:80px;height:80px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px;font-weight:900;color:#46EF80">${initials}</div>
+    <div style="font-size:19px;font-weight:800;color:var(--txt1)">${name}</div>
+    <div style="font-size:13px;color:var(--txt2);margin-top:4px">${(S.profile&&S.profile.cpf)||S.form.cpf||'CPF não informado'}</div>
+  </div>
+
+  <div style="margin:0 16px 16px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+    <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;background:#f0fef6" data-a="go-perfil">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:800;color:var(--txt1)">${cTitle}</div>
+        <div style="font-size:12px;color:#46EF80;margin-top:2px;font-weight:700">${cSub}</div>
+      </div>
+      <div style="width:36px;height:36px;border-radius:50%;background:#46EF80;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" fill="none" style="width:18px;height:18px"><path d="M9 6l6 6-6 6" stroke="#002430" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:0 16px 16px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+    <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.1em;padding:14px 20px 4px;text-transform:uppercase">COBRANÇAS</div>
+    ${[['Junho 2026','R$ 315,80','Pago'],['Maio 2026','R$ 315,80','Pago'],['Abril 2026','R$ 315,80','Pago']].map(([mes,val,st],i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;${i<2?'border-bottom:1px solid #f0f2f5':''}">
+      <div><div style="font-size:14px;font-weight:600;color:var(--txt1)">${mes}</div><div style="font-size:12px;color:var(--txt3);margin-top:2px">3 apólices</div></div>
+      <div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--txt1)">${val}</div><div style="font-size:11px;font-weight:700;color:#279989;margin-top:2px">${st}</div></div>
+    </div>`).join('')}
+  </div>
+  <div style="margin:0 16px 16px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+    <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.1em;padding:14px 20px 4px;text-transform:uppercase">AJUDA</div>
+    ${row('bolt','Dúvidas frequentes','Pergunte ao assistente','go-chat')}
+    <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;border-bottom:1px solid #f0f2f5" data-a="go-chat">
+      <div style="width:32px;height:32px;border-radius:10px;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico('family',17,'#002430')}</div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--txt1)">Converse no chat</div><div style="font-size:12px;color:var(--txt3);margin-top:1px">Tire dúvidas sobre seguros</div></div>
+      <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;color:#bbb"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    ${row('shield','Central de sinistros','Abrir ou acompanhar um sinistro')}
+    <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer" data-a="go-delete-account">
+      <div style="width:32px;height:32px;border-radius:10px;background:rgba(220,38,38,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico('bolt',17,'#dc2626')}</div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:600;color:#dc2626">Solicitar desativação da conta</div></div>
+      <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;color:#bbb"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+
+  <div style="margin:0 16px 16px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+    <div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.1em;padding:14px 20px 4px;text-transform:uppercase">MAIS INFORMAÇÕES</div>
+    ${row('doc','Política de privacidade','','go-privacy')}
+    ${row('shield','Termos de uso','','go-terms')}
+    ${row('doc','Licenças de código aberto','','soon')}
+  </div>
+
+  <div style="margin:0 16px 24px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+    <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer" data-a="sair">
+      <div style="width:32px;height:32px;border-radius:10px;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico('bolt',17,'#002430')}</div>
+      <div style="flex:1"><div style="font-size:15px;font-weight:600;color:var(--txt1)">Sair do App</div></div>
+      <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px;color:#bbb"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+</div>
+${tbar}
+</div>`}
+
+// EDITAR PERFIL
+function rPerfil(){
+  const p=S.profile||{};
+  const v=k=>(p[k]!=null?String(p[k]):'');
+  const field=(lbl,id,ph,val,im='text',type='text')=>`<div class="iw" style="margin-bottom:12px">
+    <div class="ilbl">${lbl}</div>
+    <input class="inp" id="${id}" type="${type}" inputmode="${im}" placeholder="${ph}" value="${(val||'').replace(/"/g,'&quot;')}" autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>`;
+  return`<div class="scr" style="background:var(--navy);overflow:hidden">
+  ${sb(true)}
+  ${nb({back:'go-conta',d:true,cancel:false,title:'Minhas informações'})}
+  <div class="scrl" style="padding:4px 24px 44px;position:relative;z-index:1">
+    <div style="margin:4px 0 18px">
+      <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;margin-bottom:6px">Complete seu cadastro</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.45);line-height:1.5">Esses dados ficam salvos com segurança na sua conta.</div>
+    </div>
+    <div class="ilbl" style="color:#46EF80;margin-bottom:10px">DADOS PESSOAIS</div>
+    ${field('NOME COMPLETO','pf-nome','Seu nome completo',v('nome')||S.form.name||'')}
+    ${field('CPF','pf-cpf','000.000.000-00',v('cpf')||S.form.cpf||'','numeric')}
+    ${field('DATA DE NASCIMENTO','pf-nasc','DD/MM/AAAA',v('nascimento'),'numeric')}
+    ${field('CELULAR','pf-tel','(11) 99999-9999',v('telefone'),'numeric')}
+    <div class="ilbl" style="color:#46EF80;margin:18px 0 10px">ENDEREÇO</div>
+    ${field('CEP','pf-cep','00000-000',v('cep'),'numeric')}
+    ${field('ENDEREÇO','pf-end','Rua / Avenida',v('endereco'))}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${field('NÚMERO','pf-num','Nº',v('numero'),'numeric')}
+      ${field('COMPLEMENTO','pf-comp','Apto / Bloco',v('complemento'))}
+    </div>
+    ${field('BAIRRO','pf-bairro','Bairro',v('bairro'))}
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
+      ${field('CIDADE','pf-cidade','Cidade',v('cidade'))}
+      ${field('UF','pf-uf','SP',v('uf'))}
+    </div>
+    <div id="pf-msg" style="font-size:13px;min-height:18px;margin:8px 2px;line-height:1.4"></div>
+    <button class="btn btn-neon" id="btn-perfil" style="margin-top:2px">Salvar informações</button>
+  </div>
+</div>`}
+
+// CHAT / ASSISTENTE
+function rChat(){
+  if(!S.chat||!S.chat.length)S.chat=[{who:'bot',text:'Olá! 👋 Sou a assistente virtual da Você Seguradora. Posso tirar dúvidas sobre seguros, coberturas, sinistros, pagamento e contratação. Como posso ajudar?'}];
+  const bubbles=S.chat.map(m=>_chatBubble(m.who,m.text)).join('');
+  const chips=['O que é franquia?','Como abrir um sinistro?','Formas de pagamento','Como cancelar?'].map(c=>`<button data-chip="${c}" style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:8px 12px;font-size:12px;color:var(--txt1);white-space:nowrap;cursor:pointer;font-family:inherit;font-weight:600;flex-shrink:0">${c}</button>`).join('');
+  return`<div class="scr" style="background:var(--surf)">
+  ${sb(false)}
+  ${nb({back:'go-conta',d:false,cancel:false,title:'Assistente Você'})}
+  <div class="scrl" id="chat-scroll" style="padding:16px 18px 8px;background:var(--surf)">
+    ${bubbles}
+    <div id="chat-typing" style="display:none;gap:8px;margin-bottom:14px;align-items:flex-end">
+      <div style="width:30px;height:30px;border-radius:50%;background:rgba(70,239,128,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico('shield',16,'#46EF80')}</div>
+      <div style="background:#fff;border-radius:16px;padding:12px 16px;font-size:14px;color:var(--txt3)">digitando…</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;overflow-x:auto;padding:6px 14px 10px;flex-shrink:0">${chips}</div>
+  <div style="display:flex;gap:8px;padding:10px 14px 24px;background:#fff;border-top:1px solid var(--border);flex-shrink:0">
+    <input id="chat-inp" class="inp" type="text" placeholder="Escreva sua dúvida..." style="flex:1;height:46px;background:var(--surf)" autocomplete="off">
+    <button id="chat-send" class="btn btn-neon" style="width:52px;height:46px;padding:0;flex-shrink:0;font-size:18px">➤</button>
+  </div>
+</div>`}
+
+// POLÍTICA / TERMOS / EXCLUSÃO DE CONTA
+function rDoc(title,paras){
+  return`<div class="scr" style="background:var(--surf)">
+  ${sb(false)}
+  ${nb({back:'go-conta',d:false,cancel:false,title:title})}
+  <div class="scrl" style="padding:20px 24px 60px">
+    <div style="font-size:11px;color:var(--txt3);margin-bottom:16px">Documento de exemplo (placeholder) — substituir pelo texto jurídico oficial antes do lançamento.</div>
+    ${paras.map(p=>`<div style="font-size:13px;color:var(--txt2);line-height:1.75;margin-bottom:14px">${p}</div>`).join('')}
+  </div>
+</div>`}
+function rPrivacy(){return rDoc('Política de Privacidade',[
+  'A Você Seguradora trata seus dados pessoais em conformidade com a LGPD (Lei nº 13.709/2018), com a finalidade de prestar serviços de seguro, emitir apólices e processar sinistros.',
+  'Coletamos apenas os dados necessários (nome, CPF, contato, endereço e dados do item segurado). Seus dados não são vendidos a terceiros.',
+  'Você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento, inclusive pela opção "Solicitar exclusão da conta" dentro do app.',
+  'Para dúvidas sobre privacidade, entre em contato com nosso Encarregado de Dados (DPO) pelos canais oficiais.'
+]);}
+function rTerms(){return rDoc('Termos de Uso',[
+  'Ao usar o aplicativo Você Seguradora, você concorda com estes Termos de Uso e com a Política de Privacidade.',
+  'As coberturas, prazos e condições de cada seguro são detalhados na respectiva apólice e nas Condições Gerais, registradas na SUSEP.',
+  'O usuário é responsável pela veracidade das informações fornecidas. Informações incorretas podem afetar a análise de sinistros.',
+  'Estes termos podem ser atualizados; mudanças relevantes serão comunicadas no app.'
+]);}
+function rDeleteAccount(){
+  return`<div class="scr" style="background:var(--navy)">
+  ${sb(true)}
+  ${nb({back:'go-conta',d:true,cancel:false,title:'Excluir conta'})}
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px;text-align:center">
+    <div style="width:72px;height:72px;border-radius:50%;background:rgba(220,38,38,.12);border:2px solid rgba(220,38,38,.25);display:flex;align-items:center;justify-content:center;margin:0 auto 24px">
+      <svg viewBox="0 0 24 24" fill="none" style="width:34px;height:34px"><path d="M3 6h18M8 6V4h8v2m-9 0v14a2 2 0 002 2h6a2 2 0 002-2V6" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:12px">Excluir sua conta?</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.5);line-height:1.6;margin-bottom:32px">Esta ação solicita a remoção da sua conta e dos seus dados (apólices, sinistros e perfil). Apólices ativas precisam ser canceladas antes. Esta ação não pode ser desfeita.</div>
+    <button class="btn" id="btn-confirm-delete" style="background:#dc2626;color:#fff;margin-bottom:12px">Confirmar exclusão</button>
+    <button class="btn btn-ghost" data-a="go-conta">Cancelar</button>
+  </div>
+</div>`}
+
+function rHome(){
+  const all=(S.policies||[]).map(p=>({accent:'#279989',rgb:'39,153,137',...p}));
+  const name=S.form.name||'Bem-vindo';
+  const firstName=name.split(' ')[0];
+  const hr=new Date().getHours();
+  const greet=hr<12?'Bom dia':hr<18?'Boa tarde':'Boa noite';
+  const totalCov=all.reduce((acc)=>acc+50000,0);
+  const fmtCov='R$ '+totalCov.toLocaleString('pt-BR')+',00';
+
+  const cards=all.map((p,pi)=>`
+  <div class="pol-card" data-a="open-pol" style="display:flex;flex-direction:row;overflow:hidden;margin-bottom:12px;border-radius:20px;background:#fff;box-shadow:0 2px 12px rgba(0,36,48,.07),0 8px 28px rgba(0,36,48,.04);border:1px solid rgba(0,36,48,.06);cursor:pointer;transition:transform .14s,box-shadow .14s" ontouchstart="this.style.transform='scale(.985)';this.style.boxShadow='0 1px 6px rgba(0,36,48,.06)'" ontouchend="this.style.transform='';this.style.boxShadow=''" onmousedown="this.style.transform='scale(.985)'" onmouseup="this.style.transform=''">
+    <div style="width:4px;flex-shrink:0;background:linear-gradient(180deg,${p.accent} 0%,${p.accent}88 100%)"></div>
+    <div style="flex:1;padding:16px 16px 14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:11px">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(${p.rgb},.1);border:1px solid rgba(${p.rgb},.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            ${ico(p.icon,21,p.accent)}
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:800;color:var(--txt1);letter-spacing:-.01em;line-height:1.2">${p.type}</div>
+            <div style="font-size:12px;color:var(--txt3);margin-top:3px;font-weight:500">${p.item}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;background:rgba(${p.rgb},.1);border:1px solid rgba(${p.rgb},.2);border-radius:20px;padding:4px 10px;flex-shrink:0">
+          <div style="width:6px;height:6px;border-radius:50%;background:${p.accent};animation:pulseD 2s ease-in-out infinite"></div>
+          <span style="font-size:10px;font-weight:800;color:${p.accent};letter-spacing:.04em">ATIVA</span>
+        </div>
+      </div>
+      <div style="height:1px;background:linear-gradient(90deg,rgba(${p.rgb},.15),transparent);margin-bottom:12px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div style="font-size:10px;color:var(--txt3);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px">Mensalidade</div>
+          <div style="font-size:18px;font-weight:900;color:var(--txt1);letter-spacing:-.03em">${p.price}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--txt3);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px">Cobertura</div>
+          <div style="font-size:15px;font-weight:800;color:${p.accent};letter-spacing:-.02em">${p.cov}</div>
+        </div>
+      </div>
+    </div>
+  </div>`).join('');
+
+  const cardsOrEmpty = all.length ? cards : `<div style="text-align:center;padding:40px 20px;border:1.5px dashed rgba(0,36,48,.12);border-radius:18px;background:#fff">
+    <div style="font-size:15px;font-weight:800;color:var(--txt1);margin-bottom:6px">Você ainda não tem apólices</div>
+    <div style="font-size:13px;color:var(--txt2);line-height:1.5">Toque em "Contratar novo seguro" acima para fazer sua primeira cotação.</div>
+  </div>`;
+
+  const tabs=[{ico:'house',lbl:'Início',tab:'home'},{ico:'shield',lbl:'Seguros',tab:'home'},{ico:'family',lbl:'Indicações',tab:'indicacoes'},{ico:'doc',lbl:'Conta',tab:'conta'}];
+  const tbar=`<div class="tbar">${tabs.map((t,i)=>`<div class="ti${i===0?' active':''}" data-tab="${t.tab}">
+    <div class="ti-pip"></div>
+    <div class="ti-ico">${ico(t.ico,24,i===0?'#279989':'#BBC8D4')}</div>
+    <div class="ti-lbl">${t.lbl}</div>
+  </div>`).join('')}</div>`;
+
+  return`<div class="scr" style="background:var(--surf)">
+<div style="background:linear-gradient(180deg,#002430 0%,#012b3a 100%);flex-shrink:0;padding-bottom:28px">
+  ${sb(true)}
+  <div style="padding:4px 24px 0">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div>
+        <div style="font-size:13px;color:rgba(255,255,255,.45);font-weight:500;letter-spacing:.01em;margin-bottom:4px">${greet}</div>
+        <div style="font-size:26px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1.15">${firstName}</div>
+      </div>
+      <div style="width:42px;height:42px;border-radius:14px;background:rgba(70,239,128,.12);border:1px solid rgba(70,239,128,.2);display:flex;align-items:center;justify-content:center;cursor:pointer" data-tab="conta">
+        <div style="font-size:16px;font-weight:900;color:#46EF80">${firstName[0]}</div>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07);border-radius:22px;padding:20px 22px;position:relative;overflow:hidden">
+      <div style="font-size:11px;color:rgba(255,255,255,.38);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Total protegido</div>
+      <div style="font-size:32px;font-weight:900;color:#46EF80;letter-spacing:-1px;line-height:1">${fmtCov}</div>
+      <div style="display:flex;gap:20px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
+        <div><div style="font-size:20px;font-weight:900;color:#fff">${all.length}</div><div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:1px">apólices ativas</div></div>
+        <div style="width:1px;background:rgba(255,255,255,.07)"></div>
+        <div><div style="font-size:20px;font-weight:900;color:#fff">0</div><div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:1px">sinistros abertos</div></div>
+        <div style="width:1px;background:rgba(255,255,255,.07)"></div>
+        <div><div style="font-size:20px;font-weight:900;color:#fff">100%</div><div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:1px">digital</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="scrl" style="padding:22px 18px 100px">
+  <button class="btn btn-neon" data-a="go-cats" style="height:52px;font-size:14px;margin-bottom:22px">+ Contratar novo seguro</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div style="font-size:17px;font-weight:800;color:var(--txt1);letter-spacing:-.02em">Minhas apólices</div>
+    <div style="font-size:13px;color:var(--teal);font-weight:700;cursor:pointer" data-a="soon">Ver todas →</div>
+  </div>
+  ${cardsOrEmpty}
+</div>
+${tbar}
+</div>`}
+
+// ===================== NAVIGATION =====================
+function goTo(id,html){
+  if(id!=='home')_homeFetched=false;
+  if(id!=='conta')_contaFetched=false;
+  const app=document.getElementById('app');
+  const prev=app.querySelector('.scr.active');
+  const wr=document.createElement('div');
+  wr.innerHTML=html;
+  const el=wr.firstElementChild;
+  app.appendChild(el);
+  if(prev){prev.classList.remove('active');prev.classList.add('out');setTimeout(()=>prev.remove(),280)}
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('active')));
+  S.scr=id;
+  bind(el);
+}
+
+function nav(id){
+  switch(id){
+    case 'splash':     goTo('splash',rSplash()); break;
+    case 'login':      goTo('login',rLogin()); break;
+    case 'cadastro':   goTo('cadastro',rCadastro()); break;
+    case 'otp':        goTo('otp',rOTP()); break;
+    case 'apolice':    goTo('apolice',rApoliceDetail()); break;
+    case 'sinistro':   goTo('sinistro',rSinistro()); break;
+    case 'sinistro-detalhe': goTo('sinistro-detalhe',rSinistroDetalhe()); break;
+    case 'sinistro-confirm': goTo('sinistro-confirm',rSinistroConfirm()); break;
+    case 'termos':     goTo('termos',rTermos()); break;
+    case 'pay-error':  goTo('pay-error',rPayError()); break;
+    case 'cats':       goTo('cats',rCats()); break;
+    case 'result':     goTo('result',rResult()); break;
+    case 'payment':    goTo('payment',rPayment()); break;
+    case 'pay-pix':    goTo('pay-pix',rPayPix()); break;
+    case 'pay-card':   goTo('pay-card',rPayCard()); break;
+    case 'pay-boleto': goTo('pay-boleto',rPayBoleto()); break;
+    case 'success':    goTo('success',rSuccess()); break;
+    case 'home':       goTo('home',rHome()); break;
+    case 'indicacoes': goTo('indicacoes',rIndicacoes()); break;
+    case 'conta':      goTo('conta',rConta()); break;
+    case 'perfil':     goTo('perfil',rPerfil()); break;
+    case 'chat':       goTo('chat',rChat()); break;
+    case 'privacy':    goTo('privacy',rPrivacy()); break;
+    case 'terms':      goTo('terms',rTerms()); break;
+    case 'delete-account': goTo('delete-account',rDeleteAccount()); break;
+    case 'loading':    goTo('loading',rLoading()); startLoad(); break;
+    default:
+      if(id.startsWith('prods-'))goTo(id,rProds(id.slice(6)));
+      else if(id.startsWith('f-')){
+        const sk=id.slice(2);
+        const cfg=FC[sk];
+        if(cfg?.type==='sel')goTo(id,rFormSel(sk));
+        else if(cfg)goTo(id,rFormTxt(sk));
+      }
+  }
+}
+
+function startLoad(){
+  [0,1,2].forEach(i=>setTimeout(()=>{
+    const el=document.getElementById('lck'+i);
+    if(el){el.innerHTML='✓';el.style.background='#46EF80';el.style.color='var(--navy)';el.style.borderColor='#46EF80';}
+  },(i+1)*700+200));
+  setTimeout(()=>nav('result'),2800);
+}
+
+function formNextStep(sk){
+  const flow=gFlow();
+  const idx=flow.indexOf(sk);
+  S.step=idx+1;
+  if(S.step<flow.length)nav('f-'+flow[S.step]);
+  else{S.step=0;nav('loading');}
+}
+
+function formBack(){
+  const flow=gFlow();
+  S.step--;
+  if(S.step<0){S.step=0;nav('prods-'+S.cat);}
+  else nav('f-'+flow[S.step]);
+}
+
+// ===================== EVENT BINDING =====================
+function bind(el){
+  if(S.scr==='splash')splashInit(el);
+  if(S.scr==='home')refreshHomePolicies();
+  if(S.scr==='conta')refreshConta();
+
+  // ── EXCLUIR CONTA ──
+  const btnDel=el.querySelector('#btn-confirm-delete');
+  if(btnDel){
+    btnDel.addEventListener('click',async()=>{
+      btnDel.textContent='Processando...';btnDel.disabled=true;
+      await deleteAccountData();
+      await authLogout();
+      S.authed=false;S.policies=[];S.form={};S.profile=null;_homeFetched=false;_contaFetched=false;
+      nav('splash');
+      setTimeout(()=>toast('Pedido de exclusão registrado.'),400);
+    });
+  }
+
+  // ── EDITAR PERFIL ──
+  const btnPerfil=el.querySelector('#btn-perfil');
+  if(btnPerfil){
+    const pfMsg=el.querySelector('#pf-msg');
+    const cpfEl=el.querySelector('#pf-cpf');
+    if(cpfEl)cpfEl.addEventListener('input',()=>{let x=cpfEl.value.replace(/\D/g,'').slice(0,11);x=x.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');cpfEl.value=x;});
+    const cepEl=el.querySelector('#pf-cep');
+    if(cepEl)cepEl.addEventListener('input',async()=>{
+      let raw=cepEl.value.replace(/\D/g,'').slice(0,8);
+      cepEl.value=raw.replace(/(\d{5})(\d)/,'$1-$2');
+      if(raw.length===8){
+        if(pfMsg){pfMsg.style.color='rgba(255,255,255,.5)';pfMsg.textContent='Buscando endereço...';}
+        try{
+          const r=await fetch('https://viacep.com.br/ws/'+raw+'/json/');
+          const d=await r.json();
+          if(d&&!d.erro){
+            const set=(id,val)=>{const e=el.querySelector('#'+id);if(e&&val)e.value=val;};
+            set('pf-end',d.logradouro);set('pf-bairro',d.bairro);set('pf-cidade',d.localidade);set('pf-uf',d.uf);
+            if(pfMsg){pfMsg.style.color='#46EF80';pfMsg.textContent='Endereço encontrado!';}
+            el.querySelector('#pf-num')?.focus();
+          }else{ if(pfMsg)pfMsg.textContent=''; }
+        }catch(e){ if(pfMsg)pfMsg.textContent=''; }
+      }
+    });
+    const telEl=el.querySelector('#pf-tel');
+    if(telEl)telEl.addEventListener('input',()=>{let x=telEl.value.replace(/\D/g,'').slice(0,11);if(x.length>10)x=x.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');else if(x.length>6)x=x.replace(/(\d{2})(\d{4,5})(\d*)/,'($1) $2-$3');else if(x.length>2)x=x.replace(/(\d{2})(\d+)/,'($1) $2');telEl.value=x;});
+    const ufEl=el.querySelector('#pf-uf');
+    if(ufEl)ufEl.addEventListener('input',()=>{ufEl.value=ufEl.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2);});
+    btnPerfil.addEventListener('click',async()=>{
+      const g=id=>(el.querySelector('#'+id)?.value||'').trim();
+      const nome=g('pf-nome');
+      if(!nome){if(pfMsg){pfMsg.style.color='#ff6b6b';pfMsg.textContent='O nome é obrigatório.';}return;}
+      const _cpf=g('pf-cpf');
+      if(_cpf&&!cpfValido(_cpf)){if(pfMsg){pfMsg.style.color='#ff6b6b';pfMsg.textContent='CPF inválido. Confira os números.';}return;}
+      btnPerfil.disabled=true;const old=btnPerfil.textContent;btnPerfil.textContent='Salvando...';
+      if(pfMsg)pfMsg.textContent='';
+      const fields={nome:nome,cpf:g('pf-cpf'),nascimento:g('pf-nasc'),telefone:g('pf-tel'),cep:g('pf-cep'),endereco:g('pf-end'),numero:g('pf-num'),complemento:g('pf-comp'),bairro:g('pf-bairro'),cidade:g('pf-cidade'),uf:g('pf-uf')};
+      const {error}=await saveProfile(fields);
+      if(error){if(pfMsg){pfMsg.style.color='#ff6b6b';pfMsg.textContent=traduzErro(error.message);}btnPerfil.disabled=false;btnPerfil.textContent=old;return;}
+      btnPerfil.textContent='✓ Salvo!';
+      if(pfMsg){pfMsg.style.color='#46EF80';pfMsg.textContent='Informações salvas na sua conta.';}
+      _contaFetched=false;
+      setTimeout(()=>nav('conta'),900);
+    });
+  }
+
+  // ── CHAT ASSISTENTE ──
+  const chatInp=el.querySelector('#chat-inp');
+  const chatSend=el.querySelector('#chat-send');
+  if(chatSend&&chatInp){
+    const scroll=el.querySelector('#chat-scroll');
+    const typing=el.querySelector('#chat-typing');
+    const sc=()=>{if(scroll)scroll.scrollTop=scroll.scrollHeight;};
+    sc();
+    const send=(txt)=>{
+      txt=(txt||chatInp.value||'').trim(); if(!txt)return;
+      const safe=escapeHtml(txt);
+      S.chat.push({who:'me',text:safe});
+      if(scroll&&typing)scroll.insertBefore(htmlToNode(_chatBubble('me',safe)),typing);
+      chatInp.value='';
+      if(typing)typing.style.display='flex'; sc();
+      setTimeout(()=>{
+        if(typing)typing.style.display='none';
+        const reply=botReply(txt);
+        S.chat.push({who:'bot',text:reply});
+        if(scroll&&typing)scroll.insertBefore(htmlToNode(_chatBubble('bot',reply)),typing);
+        sc();
+      },700);
+    };
+    chatSend.addEventListener('click',()=>send());
+    chatInp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+    el.querySelectorAll('[data-chip]').forEach(b=>b.addEventListener('click',()=>send(b.dataset.chip)));
+    setTimeout(()=>chatInp.focus(),200);
+  }
+
+  // ── VINCULAR APÓLICE (cotação sem conta) ──
+  const btnVinc=el.querySelector('#btn-vincular');
+  if(btnVinc){
+    const sucMsg=el.querySelector('#suc-msg');
+    const cpfV=el.querySelector('#suc-cpf');
+    if(cpfV)cpfV.addEventListener('input',()=>{let x=cpfV.value.replace(/\D/g,'').slice(0,11);x=x.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');cpfV.value=x;});
+    btnVinc.addEventListener('click',()=>{
+      const email=(el.querySelector('#suc-email')?.value||'').trim().toLowerCase();
+      const cpf=(cpfV?.value||'').trim();
+      if(!email||!email.includes('@')){if(sucMsg){sucMsg.style.color='#ff6b6b';sucMsg.textContent='Informe um e-mail válido.';}return;}
+      if(S.prod){
+        const p=gP();const pr=p.price;const price=(S.plan==='mensal'?pr.m:pr.a)+'/mês';
+        const item=S.form.modelo||S.form.placa||S.form.beneficiario||'Contratado';
+        addPendingPolicy(email,cpf,{type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov});
+      }
+      btnVinc.textContent='✓ Salvo!';btnVinc.disabled=true;
+      if(sucMsg){sucMsg.style.color='#46EF80';sucMsg.textContent='Pronto! Crie sua conta com '+email+' que esta apólice aparece nela.';}
+    });
+  }
+
+  // ── LOGIN (e-mail + senha, via Supabase) ──
+  const loginEmail=el.querySelector('#login-email');
+  const loginSenha=el.querySelector('#login-senha');
+  const btnLogin=el.querySelector('#btn-login');
+  const loginErro=el.querySelector('#login-erro');
+  if(btnLogin&&loginEmail){
+    const doLogin=async()=>{
+      const email=(loginEmail.value||'').trim();
+      const senha=loginSenha?.value||'';
+      if(!email||!senha){if(loginErro)loginErro.textContent='Preencha e-mail e senha.';return;}
+      btnLogin.disabled=true;const old=btnLogin.textContent;btnLogin.textContent='Entrando...';
+      if(loginErro)loginErro.textContent='';
+      const {data,error}=await authLogin({email,senha});
+      if(error){if(loginErro)loginErro.textContent=traduzErro(error.message);btnLogin.disabled=false;btnLogin.textContent=old;return;}
+      S.authed=true;
+      S.form.name=data?.user?.user_metadata?.nome||email.split('@')[0];
+      await claimPendingPolicies(email);
+      nav('home');
+    };
+    btnLogin.addEventListener('click',doLogin);
+    loginSenha?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  }
+
+  // ── CADASTRO (cria usuário real no Supabase) ──
+  const btnCad=el.querySelector('#btn-cadastro');
+  if(btnCad){
+    const cadErro=el.querySelector('#cad-erro');
+    btnCad.addEventListener('click',async()=>{
+      const nome=(el.querySelector('#cad-nome')?.value||'').trim();
+      const email=(el.querySelector('#cad-email')?.value||'').trim();
+      const telefone=(el.querySelector('#cad-tel')?.value||'').trim();
+      const senha=el.querySelector('#cad-senha')?.value||'';
+      if(!nome||!email||!senha){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent='Preencha nome, e-mail e senha.';}return;}
+      if(!emailValido(email)){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent='Digite um e-mail válido.';}return;}
+      if(senha.length<6){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent='A senha precisa ter ao menos 6 caracteres.';}return;}
+      btnCad.disabled=true;const old=btnCad.textContent;btnCad.textContent='Criando...';
+      if(cadErro)cadErro.textContent='';
+      const {data,error}=await authSignUp({nome,email,telefone,senha});
+      if(error){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent=traduzErro(error.message);}btnCad.disabled=false;btnCad.textContent=old;return;}
+      S.form.name=nome;
+      if(data?.session){ S.authed=true; await claimPendingPolicies(email); nav('home'); }
+      else{
+        btnCad.textContent='✓ Conta criada!';
+        if(cadErro){cadErro.style.color='#46EF80';cadErro.textContent='Conta criada! Verifique seu e-mail para confirmar e depois faça login.';}
+        setTimeout(()=>nav('login'),2600);
+      }
+    });
+  }
+
+  // ── OTP ──
+  const otpBoxes=el.querySelectorAll('[id^="otp-"]');
+  const btnOtp=el.querySelector('#btn-otp');
+  const otpTimer=el.querySelector('#otp-timer');
+  const otpCount=el.querySelector('#otp-count');
+  const btnResend=el.querySelector('#btn-resend');
+  if(otpBoxes.length){
+    otpBoxes.forEach((box,i)=>{
+      box.addEventListener('input',()=>{
+        box.value=box.value.replace(/\D/g,'').slice(0,1);
+        if(box.value&&i<5)otpBoxes[i+1]?.focus();
+        const code=[...otpBoxes].map(b=>b.value).join('');
+        if(btnOtp){btnOtp.disabled=code.length<6;btnOtp.style.opacity=code.length<6?'.4':'1';}
+        // style filled boxes
+        box.style.borderColor=box.value?'#46EF80':'rgba(255,255,255,.1)';
+      });
+      box.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!box.value&&i>0)otpBoxes[i-1]?.focus();});
+    });
+    otpBoxes[0]?.focus();
+  }
+  if(btnOtp){
+    btnOtp.addEventListener('click',()=>{
+      btnOtp.textContent='Verificando...';btnOtp.disabled=true;
+      setTimeout(()=>nav('home'),1200);
+    });
+  }
+  if(otpCount){
+    let t=60;
+    const iv=setInterval(()=>{
+      t--;if(otpCount)otpCount.textContent=t+'s';
+      if(t<=0){
+        clearInterval(iv);
+        if(otpTimer)otpTimer.style.display='none';
+        if(btnResend)btnResend.style.display='inline';
+      }
+    },1000);
+  }
+  if(btnResend)btnResend.addEventListener('click',()=>{btnResend.textContent='Código reenviado! ✓';btnResend.disabled=true;});
+
+  // ── POLICY CARDS → DETAIL ──
+  el.querySelectorAll('[data-a="open-pol"]').forEach((card,i)=>{
+    card.addEventListener('click',()=>{
+      S.curPol=(S.policies&&S.policies[i])||S.curPol;
+      nav('apolice');
+    });
+  });
+
+  // ── SINISTRO TYPE ──
+  el.querySelectorAll('[data-a="sel-sinistro"]').forEach(b=>{
+    b.addEventListener('click',()=>{S.sinistroTipo=b.dataset.sid;nav('sinistro-detalhe');});
+  });
+
+  // ── TERMOS ──
+  const termosCheck=el.querySelector('#termos-check');
+  const chkBox=el.querySelector('#chk-box');
+  const btnAceitar=el.querySelector('#btn-aceitar');
+  if(termosCheck){
+    let checked=false;
+    termosCheck.addEventListener('click',()=>{
+      checked=!checked;
+      if(chkBox){chkBox.style.background=checked?'#002430':'#fff';chkBox.style.borderColor=checked?'#002430':'rgba(0,36,48,.2)';chkBox.innerHTML=checked?'<svg viewBox="0 0 24 24" fill="none" style="width:14px;height:14px"><path d="M5 12l5 5L19 7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>':'';}
+      if(btnAceitar){btnAceitar.disabled=!checked;btnAceitar.style.opacity=checked?'1':'.4';}
+    });
+  }
+  if(btnAceitar)btnAceitar.addEventListener('click',()=>nav('payment'));
+
+  // ── UPLOAD FOTO (sinistro) ──
+  const uploadArea=el.querySelector('#upload-area');
+  if(uploadArea)uploadArea.addEventListener('click',()=>{uploadArea.innerHTML='<div style="font-size:14px;font-weight:700;color:#46EF80">✓ 1 foto adicionada</div><div style="font-size:12px;color:var(--muted);margin-top:4px">IMG_0042.jpg</div>';});
+
+  // ── DOWNLOAD APÓLICE ──
+  el.querySelectorAll('[data-a="download-apolice"]').forEach(b=>b.addEventListener('click',()=>{b.textContent='✓ Baixando PDF...';setTimeout(()=>{b.textContent='Baixar PDF';},2000);}));
+  el.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',async()=>{
+    const a=b.dataset.a;
+    if(a==='go-splash')nav('splash');
+    else if(a==='go-login')nav('login');
+    else if(a==='go-cadastro')nav('cadastro');
+    else if(a==='go-perfil')nav('perfil');
+    else if(a==='go-conta')nav('conta');
+    else if(a==='go-chat')nav('chat');
+    else if(a==='go-privacy')nav('privacy');
+    else if(a==='go-terms')nav('terms');
+    else if(a==='go-delete-account')nav('delete-account');
+    else if(a==='soon')toast('Em breve 🙂');
+    else if(a==='go-cats')nav('cats');
+    else if(a==='go-result')nav('result');
+    else if(a==='go-payment')nav('payment');
+    else if(a==='go-termos')nav('termos');
+    else if(a==='go-apolice')nav('apolice');
+    else if(a==='go-sinistro')nav('sinistro');
+    else if(a==='go-sinistro-detalhe')nav('sinistro-detalhe');
+    else if(a==='go-sinistro-confirm'){
+      const tipo=S.sinistroTipo||'outros';
+      const desc=(el.querySelector('#sin-desc')?.value||'').trim();
+      const local=(el.querySelector('#sin-local')?.value||'').trim();
+      const data=(el.querySelector('#sin-data')?.value||'').trim();
+      const full=[data&&('Data: '+data),local&&('Local: '+local),desc].filter(Boolean).join(' · ');
+      await saveClaim({tipo:tipo,descricao:full});
+      nav('sinistro-confirm');
+    }
+    else if(a==='go-home'){
+      if(S.scr==='success'&&S.prod){
+        const p=gP();const pr=p.price;
+        const price=(S.plan==='mensal'?pr.m:pr.a)+'/mês';
+        const item=S.form.modelo||S.form.placa||S.form.beneficiario||S.form.banco_emp||'Contratado';
+        let pagamento='';const pm=S.payMethod;
+        if(pm==='card'){const dg=(S.cardForm&&S.cardForm.num||'').replace(/\D/g,'');const last4=dg.slice(-4);const br=(typeof detectBrand==='function'?detectBrand(dg):'');pagamento='Cartão •••• '+(last4||'????')+(br?' ('+br+')':'');}
+        else if(pm==='pix')pagamento='PIX';
+        else if(pm==='boleto')pagamento='Boleto';
+        const pol={type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov,pagamento:pagamento,accent:'#279989',rgb:'39,153,137'};
+        const u=await currentUser();
+        if(u){ await savePolicy(pol); }
+        else { if(!S.policies.find(x=>x.type===pol.type)) S.policies.push(pol); }
+      }
+      nav('home');
+    }
+    else if(a==='go-success')nav('success');
+    else if(a==='sel-cat'||a==='noop'){}
+    else if(a==='form-back')formBack();
+    else if(a==='cancel'){S.step=0;nav(S.cat?'prods-'+S.cat:'cats');}
+    else if(a==='copy-link'){
+      const link='https://voce.seg.br/indica/'+Math.random().toString(36).slice(2,8).toUpperCase();
+      navigator.clipboard?.writeText(link).catch(()=>{});
+      b.textContent='✓ Link copiado!';b.style.background='#279989';
+      setTimeout(()=>{b.textContent='Copiar meu link de indicação';b.style.background='';},2200);
+    }
+    else if(a==='sair'){ await authLogout(); S.authed=false; S.policies=[]; S.form={}; S.profile=null; _homeFetched=false; _contaFetched=false; nav('splash'); }
+    else if(a==='how-ref'||a.startsWith('share-')||a.startsWith('menu-')||a==='complete-profile'){ toast('Em breve 🙂'); }
+  }));
+
+  // Tab bar
+  el.querySelectorAll('[data-tab]').forEach(t=>t.addEventListener('click',()=>{
+    const tab=t.dataset.tab;
+    if(tab&&tab!==S.scr)nav(tab);
+  }));
+
+  // Category cards
+  el.querySelectorAll('[data-cid]').forEach(c=>c.addEventListener('click',()=>{S.cat=c.dataset.cid;nav('prods-'+S.cat);}));
+
+  // Product cards
+  el.querySelectorAll('[data-pid]').forEach(c=>c.addEventListener('click',()=>{
+    S.prod=c.dataset.pid;S.step=0;S.form={};
+    const flow=gFlow();
+    nav('f-'+flow[0]);
+  }));
+
+  // Payment method
+  el.querySelectorAll('[data-pm]').forEach(b=>b.addEventListener('click',()=>{
+    S.payMethod=b.dataset.pm;
+    nav('pay-'+b.dataset.pm);
+  }));
+
+  // Plan tabs
+  el.querySelectorAll('[data-plan]').forEach(t=>t.addEventListener('click',()=>{S.plan=t.dataset.plan;nav('result');}));
+
+  // Text form
+  const btnFN=el.querySelector('#btn-fnext');
+  if(btnFN){
+    const sk=btnFN.dataset.sk;
+    const cfg=FC[sk];
+    const inp=el.querySelector('#finp');
+    if(inp){
+      if(cfg?.mask)inp.addEventListener('input',()=>{inp.value=cfg.mask(inp.value)});
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter')btnFN.click();});
+      setTimeout(()=>inp.focus(),150);
+    }
+    btnFN.addEventListener('click',()=>{
+      if(inp&&cfg)S.form[cfg.key]=inp.value;
+      formNextStep(sk);
+    });
+  }
+
+  // Select form
+  const btnSN=el.querySelector('#btn-snext');
+  if(btnSN){
+    const sk=btnSN.dataset.sk;
+    el.querySelectorAll('[data-sv]').forEach(o=>o.addEventListener('click',()=>{
+      const v=o.dataset.sv;
+      S.form[sk]=v;
+      el.querySelectorAll('[data-sv]').forEach(x=>x.classList.remove('sel'));
+      o.classList.add('sel');
+      btnSN.removeAttribute('disabled');
+    }));
+    btnSN.addEventListener('click',()=>formNextStep(sk));
+  }
+
+  // Card payment
+  const ccNum=el.querySelector('#cc-num');
+  const ccName=el.querySelector('#cc-name');
+  const ccExp=el.querySelector('#cc-exp');
+  const ccCvv=el.querySelector('#cc-cvv');
+  const btnPC=el.querySelector('#btn-pay-card');
+  if(ccNum){
+    ccNum.addEventListener('input',()=>{
+      let v=ccNum.value.replace(/\D/g,'').slice(0,16);
+      ccNum.value=v.replace(/(.{4})/g,'$1 ').trim();
+      S.cardForm.num=ccNum.value;
+    });
+  }
+  if(ccName){ccName.addEventListener('input',()=>{S.cardForm.name=ccName.value.toUpperCase();ccName.value=S.cardForm.name;});}
+  if(ccExp){
+    ccExp.addEventListener('input',()=>{
+      let v=ccExp.value.replace(/\D/g,'').slice(0,4);
+      if(v.length>2)v=v.slice(0,2)+'/'+v.slice(2);
+      ccExp.value=v;S.cardForm.exp=v;
+    });
+  }
+  if(ccCvv){
+    ccCvv.addEventListener('focus',()=>{S.cvvFocus=true;const c=document.getElementById('pcard');if(c)c.classList.add('flip');});
+    ccCvv.addEventListener('blur',()=>{S.cvvFocus=false;const c=document.getElementById('pcard');if(c)c.classList.remove('flip');});
+    ccCvv.addEventListener('input',()=>{S.cardForm.cvv=ccCvv.value;});
+  }
+  if(btnPC){
+    btnPC.addEventListener('click',()=>{
+      btnPC.textContent='Processando...';btnPC.disabled=true;
+      setTimeout(()=>nav('success'),1800);
+    });
+  }
+}
+
+// Boot
+if(SB){SB.auth.getSession().then(({data})=>{ if(data&&data.session){ S.authed=true; const u=data.session.user; if(u&&u.user_metadata)applyProfile(u.user_metadata); } }).catch(()=>{});}
+nav('splash');
+</script>
+</body>
+</html>
