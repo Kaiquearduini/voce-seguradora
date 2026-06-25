@@ -174,6 +174,8 @@ body{background:#0e1e27;font-family:'Poppins','Helvetica Neue',Helvetica,Arial,s
 @keyframes pulseGlow{0%,100%{filter:drop-shadow(0 0 18px rgba(70,239,128,.45));transform:scale(1)}50%{filter:drop-shadow(0 0 48px rgba(70,239,128,.8));transform:scale(1.04)}}
 @keyframes vFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-9px) rotate(-1.5deg)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes tdot{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-4px);opacity:1}}
+.tdot{width:7px;height:7px;border-radius:50%;background:#279989;display:inline-block;animation:tdot 1.1s infinite ease-in-out}
 .sp-v{animation:vFloat 3.6s ease-in-out infinite;will-change:transform}
 @keyframes pulseD{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
 @keyframes checkIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
@@ -326,38 +328,102 @@ function faceScan(cb){
   host.appendChild(ov);
   setTimeout(()=>{try{ov.remove();}catch(e){} cb&&cb();},1300);
 }
-function addPendingPolicy(email,cpf,pol){ const a=_readPending(); a.push({email:(email||'').toLowerCase(),cpf:cpf||'',pol:pol,ts:Date.now()}); _writePending(a); }
-async function claimPendingPolicies(email){
-  if(!email)return; email=email.toLowerCase();
+function _digits(x){ return (x||'').replace(/\D/g,''); }
+function _matchPending(x,email,cpf){ email=(email||'').toLowerCase(); cpf=_digits(cpf); return !!((email&&(x.email||'')===email)||(cpf&&x.cpf&&_digits(x.cpf)===cpf)); }
+function addPendingPolicy(email,cpf,pol){ const a=_readPending(); a.push({email:(email||'').toLowerCase(),cpf:_digits(cpf),pol:pol,status:'paga',ts:Date.now()}); _writePending(a); }
+function addPendingQuote(email,cpf,q){ const a=_readPending(); a.push({email:(email||'').toLowerCase(),cpf:_digits(cpf),status:'cotacao',prod:q.prod,plan:q.plan||'mensal',form:q.form||{},snap:q.snap||{},ts:Date.now()}); _writePending(a); }
+function pendingQuotesFor(email,cpf){ return _readPending().filter(x=>x.status==='cotacao'&&_matchPending(x,email,cpf)); }
+function removePendingQuote(ts){ try{_writePending(_readPending().filter(x=>String(x.ts)!==String(ts)));}catch(e){} }
+async function claimPendingPolicies(email,cpf){
   const a=_readPending(); if(!a.length)return;
-  const mine=a.filter(x=>(x.email||'')===email);
-  const rest=a.filter(x=>(x.email||'')!==email);
-  for(const it of mine){ try{await savePolicy(it.pol);}catch(e){} }
-  _writePending(rest);
+  const paid=a.filter(x=>x.status!=='cotacao'&&_matchPending(x,email,cpf));
+  for(const it of paid){ try{await savePolicy(it.pol);}catch(e){} }
+  _writePending(a.filter(x=>!(x.status!=='cotacao'&&_matchPending(x,email,cpf))));
 }
-function _chatBubble(who,text){
-  if(who==='bot')return '<div style="display:flex;gap:8px;margin-bottom:14px;align-items:flex-end"><div style="width:30px;height:30px;border-radius:50%;background:rgba(70,239,128,.15);border:1px solid rgba(70,239,128,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ico('shield',16,'#46EF80')+'</div><div style="max-width:78%;background:#fff;border-radius:16px 16px 16px 4px;padding:12px 14px;font-size:14px;color:#0b1f27;line-height:1.55;box-shadow:0 1px 4px rgba(0,0,0,.06)">'+text+'</div></div>';
-  return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><div style="max-width:80%;background:#002430;color:#fff;border-radius:16px 16px 4px 16px;padding:12px 14px;font-size:14px;line-height:1.5">'+text+'</div></div>';
+function _pendCard(q){
+  const s=q.snap||{};
+  const icon=s.icon||'shield';
+  return `<div style="border:1.5px dashed var(--border);border-radius:20px;overflow:hidden;background:#fff;margin-bottom:14px">
+    <div style="background:rgba(232,163,61,.10);padding:13px 16px;border-bottom:1px solid rgba(0,0,0,.04)">
+      <div style="font-size:13px;font-weight:800;color:#9a6a16">Fique de olho!</div>
+      <div style="font-size:13px;color:#9a6a16;margin-top:2px">Esta cotação é válida até ${s.validade||'—'}.</div>
+    </div>
+    <div style="padding:16px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+        <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(232,163,61,.12);border-radius:20px;padding:5px 11px;margin-bottom:12px">
+          <span style="width:8px;height:8px;border-radius:50%;background:#E8A33D;display:inline-block"></span>
+          <span style="font-size:11px;font-weight:800;letter-spacing:.04em;color:#9a6a16">ATIVAÇÃO PENDENTE</span>
+        </div>
+        <div style="width:42px;height:42px;border-radius:12px;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(icon,22,'#002430')}</div>
+      </div>
+      <div style="font-size:13px;color:var(--txt2);font-weight:600">${s.type||'Seguro'}</div>
+      <div style="font-size:20px;font-weight:800;color:var(--txt1);margin:2px 0 16px;letter-spacing:-.02em">${escapeHtml(s.item||'—')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px 28px;margin-bottom:18px">
+        <div><div style="font-size:12px;color:var(--txt2);margin-bottom:3px">Valor da assinatura</div><div style="font-size:16px;font-weight:800;color:var(--txt1)">${s.price||'—'}</div></div>
+        <div><div style="font-size:12px;color:var(--txt2);margin-bottom:3px">Valor de cobertura</div><div style="font-size:16px;font-weight:800;color:var(--txt1)">${s.cov||'—'}</div></div>
+        <div><div style="font-size:12px;color:var(--txt2);margin-bottom:3px">Vigência do plano</div><div style="font-size:16px;font-weight:800;color:var(--txt1)">${s.planLabel||'Mensal'}</div></div>
+      </div>
+      <button class="btn btn-neon" data-a="ativar-cotacao" data-q="${q.ts}" style="height:50px;margin-bottom:6px">Ativar cobertura</button>
+      <button data-a="alterar-cotacao" data-q="${q.ts}" style="width:100%;background:none;border:none;color:var(--teal);font-size:14px;font-weight:800;padding:10px;cursor:pointer;font-family:inherit">Alterar cotação</button>
+    </div>
+  </div>`;
+}
+function pendingQuotesHTML(){
+  let list=[]; try{ list=pendingQuotesFor(S.userEmail||'', (S.profile&&S.profile.cpf)||''); }catch(e){}
+  if(!list.length)return '';
+  const cards=list.sort((a,b)=>b.ts-a.ts).map(_pendCard).join('');
+  return `<div style="margin-bottom:24px"><div style="font-size:17px;font-weight:800;color:var(--txt1);letter-spacing:-.02em;margin-bottom:14px">Minhas cotações</div>${cards}</div>`;
+}
+function _chatBubble(m){
+  const who=m.who, text=m.text||'', t=m.t||'';
+  const time=t?`<div style="font-size:10px;color:var(--txt3);margin-top:4px;${who==='me'?'text-align:right':''}">${t}</div>`:'';
+  if(who==='bot'){
+    const acts=(m.actions&&m.actions.length)?('<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+m.actions.map(a=>`<button data-nav="${a.nav}" style="background:rgba(70,239,128,.12);border:1px solid rgba(70,239,128,.3);color:#0f6e56;border-radius:14px;padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${a.label}</button>`).join('')+'</div>'):'';
+    return '<div style="display:flex;gap:8px;margin-bottom:14px;align-items:flex-end"><div style="width:30px;height:30px;border-radius:50%;background:rgba(70,239,128,.15);border:1px solid rgba(70,239,128,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden"><img src="'+LOGO_SYM+'" alt="" style="width:17px;height:auto"></div><div style="max-width:82%"><div style="background:#fff;border-radius:16px 16px 16px 4px;padding:12px 14px;font-size:14px;color:#0b1f27;line-height:1.55;box-shadow:0 1px 4px rgba(0,0,0,.06)">'+text+'</div>'+acts+time+'</div></div>';
+  }
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><div style="max-width:80%"><div style="background:#002430;color:#fff;border-radius:16px 16px 4px 16px;padding:12px 14px;font-size:14px;line-height:1.5">'+text+'</div>'+time+'</div></div>';
 }
 function botReply(q){
   const t=(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const has=(...ks)=>ks.some(k=>t.includes(k));
-  if(has('franquia'))return 'Franquia é o valor que você paga em caso de sinistro antes de a seguradora cobrir o restante. Ex.: num reparo de R$ 5.000 com franquia de R$ 1.500, você paga R$ 1.500 e a seguradora cobre R$ 3.500. Quanto menor a franquia, geralmente maior a mensalidade.';
-  if(has('cobertura','cobre','coberto'))return 'Cobertura é o conjunto de situações protegidas pela apólice (colisão, roubo, furto, incêndio, danos a terceiros, assistência 24h, etc.). Você vê a lista completa de cada seguro antes de contratar.';
-  if(has('sinistro','acidente','bati','roubaram','roubo','furto','quebrou','colis'))return 'Para abrir um sinistro: vá em "Minhas apólices" → abra a apólice → "Abrir sinistro". Você descreve o ocorrido, anexa fotos/documentos e recebe um protocolo para acompanhar. Prazo médio de análise: 2 dias úteis.';
-  if(has('cancelar','cancelamento','desistir'))return 'Você pode cancelar quando quiser, sem multa nos planos mensais. A cobertura segue ativa até o fim do período já pago.';
-  if(has('pagar','pagamento','pix','boleto','cartao','parcel'))return 'Aceitamos PIX (na hora), cartão de crédito (parcelável) e boleto (vence em 3 dias úteis). Assim que o pagamento é confirmado, a apólice é ativada automaticamente.';
-  if(has('carencia','prazo'))return 'Carência é o tempo entre a contratação e o início de certas coberturas. Em geral: 0 dias para colisão e até 30 dias para alguns eventos naturais. O detalhe fica nas condições gerais de cada produto.';
-  if(has('contratar','cotar','cotacao','fazer seguro','quero um seguro'))return 'É rápido: na tela inicial toque em "+ Contratar novo seguro", escolha a categoria e o produto, responda algumas perguntas e veja o preço na hora. Quer saber quais tipos de seguro temos?';
-  if(has('tipos','quais seguro','produtos','oferecem','o que voces'))return 'Temos seguros de Automóvel, Moto, Celular, Casa/Residencial, Vida, Acidentes Pessoais, Pet e proteções financeiras. Toque em "Contratar novo seguro" para ver todos com preços.';
-  if(has('preco','valor','quanto custa','quanto fica','mensalidade'))return 'O preço depende do produto e do seu perfil. O melhor é fazer uma cotação rápida (toque em "Contratar novo seguro") — leva menos de 1 minuto e sem compromisso.';
-  if(has('documento','rg','cnh','preciso'))return 'Para contratar, basicamente CPF e alguns dados do item segurado. Para sinistros, pode ser pedido documento com foto e comprovantes (notas, B.O.) — sempre avisamos na hora.';
-  if(has('reembolso','indeniza','quando recebo'))return 'Após a aprovação do sinistro, a indenização é paga conforme as condições da apólice. Você acompanha cada etapa pelo protocolo, dentro do app.';
-  if(has('humano','atendente','pessoa','suporte','reclama'))return 'Posso resolver a maioria das dúvidas por aqui. Para atendimento humano, use a Central de sinistros na aba Conta — um atendente assume em horário comercial.';
-  if(has('oi','ola','bom dia','boa tarde','boa noite','eai','opa','hello'))return 'Olá! Como posso ajudar com seu seguro hoje? Posso falar sobre coberturas, franquia, sinistros, pagamento, carência e contratação.';
-  if(has('obrigad','valeu','vlw','thanks'))return 'Por nada! 😊 Qualquer outra dúvida sobre seguros, é só chamar.';
-  return 'Posso ajudar com: o que é franquia, coberturas, como abrir um sinistro, formas de pagamento, carência, como contratar e cancelamento. Sobre qual desses você quer saber? Se preferir, reformule a pergunta que eu tento de novo.';
+  const nome=((S.form&&S.form.name)||'').split(' ')[0];
+  const pols=(S.policies||[]);
+  const R=(text,actions,topic)=>({text:text,actions:actions||[],topic:topic||''});
+  if(has('minhas apolice','meus seguro','quantas apolice','quantos seguro','o que eu tenho','tenho seguro','tenho apolice')){
+    if(pols.length){const lista=pols.map(p=>'• '+p.type+(p.item&&p.item!=='—'?(' ('+p.item+')'):'')).join('<br>');return R('Você tem '+pols.length+' '+(pols.length>1?'apólices ativas':'apólice ativa')+':<br>'+lista+'<br><br>Toque em uma apólice na tela inicial para ver os detalhes.',[{label:'Ver na tela inicial',nav:'home'}],'apolices');}
+    return R((nome?nome+', você':'Você')+' ainda não tem apólices ativas. Quer fazer uma cotação rápida? Leva menos de 1 minuto, sem compromisso.',[{label:'Fazer cotação',nav:'cats'}],'contratar');
+  }
+  if(has('franquia'))return R('Franquia é o valor que você paga em caso de sinistro antes de a seguradora cobrir o restante. Ex.: num reparo de R$ 5.000 com franquia de R$ 1.500, você paga R$ 1.500 e a seguradora cobre R$ 3.500. Quanto menor a franquia, geralmente maior a mensalidade.',[],'franquia');
+  if(has('cobertura','cobre','coberto'))return R('Cobertura é o conjunto de situações protegidas pela apólice (colisão, roubo, furto, incêndio, danos a terceiros, assistência 24h, etc.). Você vê a lista completa de cada seguro antes de contratar.',[{label:'Ver seguros',nav:'cats'}],'cobertura');
+  if(has('sinistro','acidente','bati','roubaram','roubo','furto','quebrou','colis'))return R('Para abrir um sinistro: toque no botão abaixo, descreva o ocorrido, anexe fotos/documentos e receba um protocolo para acompanhar. Prazo médio de análise: 2 dias úteis.',[{label:'Abrir sinistro',nav:'sinistro'}],'sinistro');
+  if(has('cancelar','cancelamento','desistir'))return R('Você pode cancelar quando quiser, sem multa nos planos mensais. A cobertura segue ativa até o fim do período já pago.',[],'cancelar');
+  if(has('pagar','pagamento','pix','boleto','cartao','parcel'))return R('Aceitamos PIX (na hora), cartão de crédito (parcelável) e boleto (vence em 3 dias úteis). Assim que o pagamento é confirmado, a apólice é ativada automaticamente.',[],'pagamento');
+  if(has('carencia','prazo'))return R('Carência é o tempo entre a contratação e o início de certas coberturas. Em geral: 0 dias para colisão e até 30 dias para alguns eventos naturais. O detalhe fica nas condições gerais de cada produto.',[],'carencia');
+  if(has('contratar','cotar','cotacao','fazer seguro','quero um seguro'))return R('É rápido: toque em "Fazer cotação", escolha a categoria e o produto, responda algumas perguntas e veja o preço na hora.',[{label:'Fazer cotação',nav:'cats'}],'contratar');
+  if(has('tipos','quais seguro','produtos','oferecem','o que voces'))return R('Temos seguros de Automóvel, Moto, Celular, Casa/Residencial, Vida, Acidentes Pessoais, Pet e proteções financeiras.',[{label:'Ver todos os seguros',nav:'cats'}],'tipos');
+  if(has('preco','valor','quanto custa','quanto fica','mensalidade'))return R('O preço depende do produto e do seu perfil. O melhor é fazer uma cotação rápida — leva menos de 1 minuto e sem compromisso.',[{label:'Fazer cotação',nav:'cats'}],'preco');
+  if(has('documento','rg','cnh','preciso'))return R('Para contratar, basicamente CPF e alguns dados do item segurado. Para sinistros, pode ser pedido documento com foto e comprovantes (notas, B.O.) — sempre avisamos na hora.',[],'documento');
+  if(has('reembolso','indeniza','quando recebo'))return R('Após a aprovação do sinistro, a indenização é paga conforme as condições da apólice. Você acompanha cada etapa pelo protocolo, dentro do app.',[],'reembolso');
+  if(has('humano','atendente','pessoa','suporte','reclama','falar com'))return R('Posso resolver a maioria das dúvidas por aqui. Para atendimento humano, use a Central de sinistros — um atendente assume em horário comercial.',[{label:'Central de sinistros',nav:'sinistro'}],'humano');
+  if(has('oi','ola','bom dia','boa tarde','boa noite','eai','opa','hello'))return R((nome?('Olá, '+nome+'! '):'Olá! ')+'Como posso ajudar com seu seguro hoje? Posso falar sobre coberturas, franquia, sinistros, pagamento, carência e contratação.',[],'saudacao');
+  if(has('obrigad','valeu','vlw','thanks'))return R('Por nada! 😊 Qualquer outra dúvida sobre seguros, é só chamar.',[],'agradecimento');
+  return R('Posso ajudar com: o que é franquia, coberturas, como abrir um sinistro, formas de pagamento, carência, como contratar e cancelamento. Sobre qual desses você quer saber? Se preferir, reformule a pergunta que eu tento de novo.',[],'fallback');
 }
+function chipsFor(topic){
+  const map={
+    sinistro:['Quais documentos preciso?','Quando recebo a indenização?','Como acompanho o sinistro?'],
+    pagamento:['Posso parcelar?','Quando a apólice é ativada?','Como funciona o PIX?'],
+    contratar:['Quais seguros vocês têm?','Quanto custa?','Quais documentos preciso?'],
+    cobertura:['O que é franquia?','Tem assistência 24h?','Como abrir um sinistro?'],
+    franquia:['O que é cobertura?','Como abrir um sinistro?','Formas de pagamento'],
+    tipos:['Quanto custa?','Como contratar?','O que é franquia?'],
+    apolices:['Como abrir um sinistro?','Como cancelar?','Formas de pagamento'],
+    preco:['Como contratar?','Posso parcelar?','Quais seguros vocês têm?']
+  };
+  return map[topic]||['O que é franquia?','Como abrir um sinistro?','Formas de pagamento','Como cancelar?'];
+}
+function _saveChat(){ try{localStorage.setItem('vs_chat',JSON.stringify((S.chat||[]).slice(-40)));}catch(e){} }
+function _loadChat(){ try{const a=JSON.parse(localStorage.getItem('vs_chat')||'null');return Array.isArray(a)&&a.length?a:null;}catch(e){return null;} }
 async function fetchProfile(){
   const u=await currentUser(); if(!u)return null;
   return Object.assign({}, u.user_metadata||{});
@@ -1146,8 +1212,34 @@ ${nb({back:'go-cats',d:false,cancel:true})}
   </div>
 </div>
 <div style="padding:0 24px 48px;flex-shrink:0">
-  <button class="btn btn-neon" data-a="go-termos" style="margin-bottom:12px">Contratar agora</button>
+  <button class="btn btn-neon" data-a="${S.authed?'go-termos':'go-identify'}" style="margin-bottom:12px">Contratar agora</button>
   <div style="text-align:center;font-size:13px;color:var(--txt3);font-weight:500">Cancelamento fácil · Sem burocracia</div>
+</div>
+</div>`}
+
+// IDENTIFICAÇÃO (visitante sem conta) — captura a cotação antes de pagar
+function rIdentify(){
+  const p=gP();const pr=p.price;
+  const price=(S.plan==='mensal'?pr.m:pr.a)+'/mês';
+  return`<div class="scr" style="background:var(--surf);overflow-y:auto">
+${sb(false)}
+${nb({back:'go-result',d:false,cancel:true})}
+<div style="padding:8px 24px 0;flex-shrink:0">
+  <div style="font-size:24px;font-weight:800;color:var(--txt1);letter-spacing:-.02em;line-height:1.2">Quase lá!</div>
+  <div style="font-size:14px;color:var(--txt2);margin-top:8px;line-height:1.55">Informe seus dados para continuar. Assim sua cotação fica <b>salva</b> — se você não finalizar agora, é só entrar depois com o mesmo e-mail ou CPF que ela estará aqui esperando. 😊</div>
+</div>
+<div style="padding:22px 24px 0">
+  <div style="background:#fff;border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px;margin-bottom:22px">
+    <div style="width:42px;height:42px;border-radius:12px;background:rgba(0,36,48,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico(p.icon,22,'#002430')}</div>
+    <div style="flex:1"><div style="font-size:13px;color:var(--txt2)">${p.name}</div><div style="font-size:15px;font-weight:800;color:var(--txt1)">${price} · ${S.plan==='mensal'?'Mensal':'Anual'}</div></div>
+  </div>
+  <div class="iw" style="margin-bottom:14px"><div class="ilbl">E-MAIL</div><input class="inp" id="id-email" type="email" inputmode="email" placeholder="voce@email.com" autocomplete="email"></div>
+  <div class="iw" style="margin-bottom:14px"><div class="ilbl">CPF</div><input class="inp" id="id-cpf" type="tel" inputmode="numeric" placeholder="000.000.000-00" autocomplete="off"></div>
+  <div id="id-erro" style="font-size:13px;min-height:18px;margin-bottom:6px;line-height:1.4"></div>
+</div>
+<div style="padding:0 24px 40px;flex-shrink:0">
+  <button class="btn btn-neon" id="btn-identify" style="margin-bottom:10px">Continuar para contratação</button>
+  <div style="display:flex;align-items:center;gap:8px;justify-content:center"><div>${ico('lock',15,'#279989')}</div><div style="text-align:center;font-size:12px;color:var(--txt3)">Seus dados são protegidos. Regulada pela SUSEP.</div></div>
 </div>
 </div>`}
 
@@ -1601,23 +1693,32 @@ function rPerfil(){
 
 // CHAT / ASSISTENTE
 function rChat(){
-  if(!S.chat||!S.chat.length)S.chat=[{who:'bot',text:'Olá! 👋 Sou a assistente virtual da Você Seguradora. Posso tirar dúvidas sobre seguros, coberturas, sinistros, pagamento e contratação. Como posso ajudar?'}];
-  const bubbles=S.chat.map(m=>_chatBubble(m.who,m.text)).join('');
-  const chips=['O que é franquia?','Como abrir um sinistro?','Formas de pagamento','Como cancelar?'].map(c=>`<button data-chip="${c}" style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:8px 12px;font-size:12px;color:var(--txt1);white-space:nowrap;cursor:pointer;font-family:inherit;font-weight:600;flex-shrink:0">${c}</button>`).join('');
+  if(!S.chat||!S.chat.length){
+    const restored=_loadChat();
+    if(restored){ S.chat=restored; }
+    else{
+      const nome=((S.form&&S.form.name)||'').split(' ')[0];
+      S.chat=[{who:'bot',text:(nome?('Olá, '+nome+'! 👋 '):'Olá! 👋 ')+'Sou a assistente virtual da Você Seguradora. Posso tirar dúvidas sobre seguros, coberturas, sinistros, pagamento e contratação. Como posso ajudar?',actions:[],t:T()}];
+    }
+  }
+  const bubbles=S.chat.map(m=>_chatBubble(m)).join('');
+  const lastTopic=(S.chat.filter(m=>m.who==='bot').slice(-1)[0]||{}).topic||'';
+  const chips=chipsFor(lastTopic).map(c=>`<button data-chip="${c}" style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:8px 12px;font-size:12px;color:var(--txt1);white-space:nowrap;cursor:pointer;font-family:inherit;font-weight:600;flex-shrink:0">${c}</button>`).join('');
   return`<div class="scr" style="background:var(--surf)">
   ${sb(false)}
   ${nb({back:'go-conta',d:false,cancel:false,title:'Assistente Você'})}
-  <div class="scrl" id="chat-scroll" style="padding:16px 18px 8px;background:var(--surf)">
+  <div style="text-align:center;font-size:11px;color:var(--txt3);padding:0 18px 8px;background:var(--surf);flex-shrink:0">Assistente virtual · respostas automáticas. Para casos complexos, fale com um humano.</div>
+  <div class="scrl" id="chat-scroll" style="padding:8px 18px 8px;background:var(--surf)">
     ${bubbles}
     <div id="chat-typing" style="display:none;gap:8px;margin-bottom:14px;align-items:flex-end">
-      <div style="width:30px;height:30px;border-radius:50%;background:rgba(70,239,128,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico('shield',16,'#46EF80')}</div>
-      <div style="background:#fff;border-radius:16px;padding:12px 16px;font-size:14px;color:var(--txt3)">digitando…</div>
+      <div style="width:30px;height:30px;border-radius:50%;background:rgba(70,239,128,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden"><img src="${LOGO_SYM}" alt="" style="width:17px;height:auto"></div>
+      <div style="background:#fff;border-radius:16px;padding:14px 16px;display:flex;gap:5px;align-items:center"><span class="tdot"></span><span class="tdot" style="animation-delay:.15s"></span><span class="tdot" style="animation-delay:.3s"></span></div>
     </div>
   </div>
-  <div style="display:flex;gap:8px;overflow-x:auto;padding:6px 14px 10px;flex-shrink:0">${chips}</div>
+  <div id="chat-chips" style="display:flex;gap:8px;overflow-x:auto;padding:6px 14px 10px;flex-shrink:0">${chips}</div>
   <div style="display:flex;gap:8px;padding:10px 14px 24px;background:#fff;border-top:1px solid var(--border);flex-shrink:0">
     <input id="chat-inp" class="inp" type="text" placeholder="Escreva sua dúvida..." style="flex:1;height:46px;background:var(--surf)" autocomplete="off">
-    <button id="chat-send" class="btn btn-neon" style="width:52px;height:46px;padding:0;flex-shrink:0;font-size:18px">➤</button>
+    <button id="chat-send" class="btn btn-neon" style="width:52px;height:46px;padding:0;flex-shrink:0" aria-label="Enviar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#002430" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
   </div>
 </div>`}
 
@@ -1708,10 +1809,14 @@ function rResetPassword(){
 
 function rHome(){
   const all=(S.policies||[]).map(p=>({accent:'#279989',rgb:'39,153,137',...p}));
-  const name=S.form.name||'Bem-vindo';
+  const name=S.form.name||'Você';
   const firstName=name.split(' ')[0];
-  const hr=new Date().getHours();
-  const greet=hr<12?'Bom dia':hr<18?'Boa tarde':'Boa noite';
+  const _fem=(()=>{const x=(firstName||'').toLowerCase();
+    const f=['ines','inês','beatriz','isis','íris','iris','raquel','miriam','mirian','carmen','ester','esther','rute','isabel','mabel','karen','caren','cris','lais','laís','tais','taís','noemi','noemí','jasmim','agnes','agnês','liz','lais','dris'];
+    const m=['luca','noa','josua','joshua','tiziano','dega','aha'];
+    if(f.includes(x))return true; if(m.includes(x))return false; return /a$/.test(x);
+  })();
+  const greet=_fem?'Seja bem-vinda':'Seja bem-vindo';
   const parseBRL=s=>{s=String(s||'').replace(/[^\d.,]/g,'');if(!s)return 0;s=s.replace(/\./g,'').replace(',','.');const n=parseFloat(s);return isNaN(n)?0:n;};
   const totalCov=all.reduce((a,p)=>a+parseBRL(p.cov),0);
   const fmtCov='R$ '+totalCov.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1812,6 +1917,7 @@ function rHome(){
 </div>
 <div class="scrl" style="padding:22px 18px 100px">
   <button class="btn btn-neon" data-a="go-cats" style="height:52px;font-size:14px;margin-bottom:22px">+ Contratar novo seguro</button>
+  ${pendingQuotesHTML()}
   <div style="margin-bottom:14px">
     <div style="font-size:17px;font-weight:800;color:var(--txt1);letter-spacing:-.02em">Minhas apólices</div>
   </div>
@@ -1850,6 +1956,7 @@ function nav(id){
     case 'pay-error':  goTo('pay-error',rPayError()); break;
     case 'cats':       goTo('cats',rCats()); break;
     case 'result':     goTo('result',rResult()); break;
+    case 'identify':   goTo('identify',rIdentify()); break;
     case 'payment':    goTo('payment',rPayment()); break;
     case 'pay-pix':    goTo('pay-pix',rPayPix()); break;
     case 'pay-card':   goTo('pay-card',rPayCard()); break;
@@ -1918,7 +2025,7 @@ function bind(el){
       btnDel.textContent='Processando...';btnDel.disabled=true;
       await deleteAccountData();
       await authLogout();
-      S.authed=false;S.policies=[];S.form={};S.profile=null;_homeFetched=false;_contaFetched=false;
+      S.authed=false;S.policies=[];S.form={};S.profile=null;S.chat=null;S.userEmail=null;_homeFetched=false;_contaFetched=false;try{localStorage.removeItem('vs_chat');}catch(e){}
       nav('splash');
       setTimeout(()=>toast('Pedido de exclusão registrado.'),400);
     });
@@ -2036,26 +2143,32 @@ function bind(el){
   if(chatSend&&chatInp){
     const scroll=el.querySelector('#chat-scroll');
     const typing=el.querySelector('#chat-typing');
+    const chipsBox=el.querySelector('#chat-chips');
     const sc=()=>{if(scroll)scroll.scrollTop=scroll.scrollHeight;};
     sc();
+    const bindChips=()=>{ if(!chipsBox)return; chipsBox.querySelectorAll('[data-chip]').forEach(b=>b.onclick=()=>send(b.dataset.chip)); };
+    const renderChips=(topic)=>{ if(!chipsBox)return; chipsBox.innerHTML=chipsFor(topic).map(c=>`<button data-chip="${c}" style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:8px 12px;font-size:12px;color:var(--txt1);white-space:nowrap;cursor:pointer;font-family:inherit;font-weight:600;flex-shrink:0">${c}</button>`).join(''); bindChips(); };
     const send=(txt)=>{
       txt=(txt||chatInp.value||'').trim(); if(!txt)return;
       const safe=escapeHtml(txt);
-      S.chat.push({who:'me',text:safe});
-      if(scroll&&typing)scroll.insertBefore(htmlToNode(_chatBubble('me',safe)),typing);
+      const meMsg={who:'me',text:safe,t:T()};
+      S.chat.push(meMsg);
+      if(scroll&&typing)scroll.insertBefore(htmlToNode(_chatBubble(meMsg)),typing);
       chatInp.value='';
-      if(typing)typing.style.display='flex'; sc();
+      if(typing)typing.style.display='flex'; sc(); _saveChat();
       setTimeout(()=>{
         if(typing)typing.style.display='none';
         const reply=botReply(txt);
-        S.chat.push({who:'bot',text:reply});
-        if(scroll&&typing)scroll.insertBefore(htmlToNode(_chatBubble('bot',reply)),typing);
-        sc();
+        const botMsg={who:'bot',text:reply.text,actions:reply.actions,t:T()};
+        S.chat.push(botMsg);
+        if(scroll&&typing)scroll.insertBefore(htmlToNode(_chatBubble(botMsg)),typing);
+        sc(); _saveChat(); renderChips(reply.topic);
       },700);
     };
     chatSend.addEventListener('click',()=>send());
     chatInp.addEventListener('keydown',e=>{if(e.key==='Enter')send();});
-    el.querySelectorAll('[data-chip]').forEach(b=>b.addEventListener('click',()=>send(b.dataset.chip)));
+    bindChips();
+    if(scroll)scroll.addEventListener('click',e=>{const b=e.target.closest('[data-nav]');if(b)nav(b.dataset.nav);});
     setTimeout(()=>chatInp.focus(),200);
   }
 
@@ -2073,14 +2186,38 @@ function bind(el){
         const p=gP();const pr=p.price;const price=(S.plan==='mensal'?pr.m:pr.a)+'/mês';
         const item=S.form.modelo||S.form.placa||S.form.beneficiario||'Contratado';
         addPendingPolicy(email,cpf,{type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov});
+        try{_writePending(_readPending().filter(x=>!(x.status==='cotacao'&&_matchPending(x,email,cpf))));}catch(e){}
       }
       btnVinc.textContent='✓ Salvo!';btnVinc.disabled=true;
       if(sucMsg){sucMsg.style.color='#46EF80';sucMsg.textContent='Pronto! Crie sua conta com '+email+' que esta apólice aparece nela.';}
     });
   }
 
-  // ── SINISTRO: data + anexos ──
-  const sinData=el.querySelector('#sin-data');
+  // ── IDENTIFICAÇÃO (visitante sem conta) → salva cotação pendente ──
+  const btnId=el.querySelector('#btn-identify');
+  if(btnId){
+    const idErro=el.querySelector('#id-erro');
+    const idCpf=el.querySelector('#id-cpf');
+    if(idCpf)idCpf.addEventListener('input',()=>{let x=idCpf.value.replace(/\D/g,'').slice(0,11);x=x.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');idCpf.value=x;});
+    btnId.addEventListener('click',()=>{
+      const email=(el.querySelector('#id-email')?.value||'').trim().toLowerCase();
+      const cpf=(idCpf?.value||'').trim();
+      if(!emailValido(email)){if(idErro){idErro.style.color='#ff6b6b';idErro.textContent='Digite um e-mail válido.';}return;}
+      if(_digits(cpf).length!==11){if(idErro){idErro.style.color='#ff6b6b';idErro.textContent='Digite um CPF válido (11 dígitos).';}return;}
+      if(S.prod){
+        const p=gP();const pr=p.price;
+        const price=(S.plan==='mensal'?pr.m:pr.a)+'/mês';
+        const item=S.form.modelo||S.form.placa||S.form.beneficiario||S.form.banco_emp||p.name;
+        const d=new Date(Date.now()+7*864e5);
+        const validade=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear();
+        const snap={type:p.name,icon:p.icon,item:item,price:price,cov:pr.cov,validade:validade,planLabel:S.plan==='mensal'?'Mensal':'Anual'};
+        addPendingQuote(email,cpf,{prod:S.prod,plan:S.plan,form:Object.assign({},S.form),snap:snap});
+      }
+      S.guestEmail=email; S.guestCpf=cpf;
+      nav('termos');
+    });
+  }
+
   if(sinData)sinData.addEventListener('input',()=>{sinData.value=maskData(sinData.value);});
   const upArea=el.querySelector('#upload-area');
   const sinFile=el.querySelector('#sin-file');
@@ -2108,8 +2245,9 @@ function bind(el){
       const {data,error}=await authLogin({email,senha});
       if(error){if(loginErro)loginErro.textContent=traduzErro(error.message);btnLogin.disabled=false;btnLogin.textContent=old;return;}
       S.authed=true;
+      S.userEmail=email.toLowerCase();
       S.form.name=data?.user?.user_metadata?.nome||email.split('@')[0];
-      await claimPendingPolicies(email);
+      await claimPendingPolicies(email,(S.profile&&S.profile.cpf)||(data?.user?.user_metadata?.cpf)||'');
       if(bioSupported() && !faceidOn()){ S._fidEmail=email; nav('faceid-prompt'); }
       else nav('home');
     };
@@ -2118,7 +2256,7 @@ function bind(el){
       if(faceidOn()){
         const u=await currentUser();
         faceScan(async()=>{
-          if(u){ S.authed=true; nav('home'); return; }
+          if(u){ S.authed=true; S.userEmail=(u.email||'').toLowerCase(); nav('home'); return; }
           // Não reconheceu → cai para e-mail e senha
           const email=(loginEmail.value||'').trim();
           const senha=loginSenha?.value||'';
@@ -2150,7 +2288,7 @@ function bind(el){
       const {data,error}=await authSignUp({nome,email,telefone,senha});
       if(error){if(cadErro){cadErro.style.color='#ff6b6b';cadErro.textContent=traduzErro(error.message);}btnCad.disabled=false;btnCad.textContent=old;return;}
       S.form.name=nome;
-      if(data?.session){ S.authed=true; await claimPendingPolicies(email); nav('home'); }
+      if(data?.session){ S.authed=true; S.userEmail=email.toLowerCase(); await claimPendingPolicies(email,(S.profile&&S.profile.cpf)||''); nav('home'); }
       else{
         btnCad.textContent='✓ Conta criada!';
         if(cadErro){cadErro.style.color='#46EF80';cadErro.textContent='Conta criada! Verifique seu e-mail para confirmar e depois faça login.';}
@@ -2284,10 +2422,14 @@ function bind(el){
         const u=await currentUser();
         if(u){ await savePolicy(pol); }
         else { if(!S.policies.find(x=>x.type===pol.type)) S.policies.push(pol); }
+        if(S._activatingTs){ removePendingQuote(S._activatingTs); S._activatingTs=null; }
       }
       nav('home');
     }
     else if(a==='go-success')nav('success');
+    else if(a==='go-identify')nav('identify');
+    else if(a==='ativar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; nav('payment'); } }
+    else if(a==='alterar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; nav('result'); } }
     else if(a==='sel-cat'||a==='noop'){}
     else if(a==='form-back')formBack();
     else if(a==='cancel'){S.step=0;nav(S.cat?'prods-'+S.cat:'cats');}
@@ -2297,7 +2439,7 @@ function bind(el){
       b.textContent='✓ Link copiado!';b.style.background='#279989';
       setTimeout(()=>{b.textContent='Copiar meu link de indicação';b.style.background='';},2200);
     }
-    else if(a==='sair'){ await authLogout(); S.authed=false; S.policies=[]; S.form={}; S.profile=null; _homeFetched=false; _contaFetched=false; nav('splash'); }
+    else if(a==='sair'){ await authLogout(); S.authed=false; S.policies=[]; S.form={}; S.profile=null; S.chat=null; S.userEmail=null; _homeFetched=false; _contaFetched=false; try{localStorage.removeItem('vs_chat');}catch(e){} nav('splash'); }
     else if(a==='how-ref'||a.startsWith('share-')||a.startsWith('menu-')||a==='complete-profile'){ toast('Em breve 🙂'); }
   }));
 
@@ -2312,7 +2454,7 @@ function bind(el){
 
   // Product cards
   el.querySelectorAll('[data-pid]').forEach(c=>c.addEventListener('click',()=>{
-    S.prod=c.dataset.pid;S.step=0;S.form={};
+    S.prod=c.dataset.pid;S.step=0;S.form={};S._activatingTs=null;
     const flow=gFlow();
     nav('f-'+flow[0]);
   }));
@@ -2408,7 +2550,7 @@ document.addEventListener('pointerdown',function(e){
 if(SB){
   // link de recuperação de senha (vindo do e-mail) abre a tela de redefinição
   SB.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ S.recovery=true; nav('reset-password'); } });
-  SB.auth.getSession().then(({data})=>{ if(data&&data.session){ S.authed=true; const u=data.session.user; if(u&&u.user_metadata)applyProfile(u.user_metadata); } }).catch(()=>{});
+  SB.auth.getSession().then(({data})=>{ if(data&&data.session){ S.authed=true; const u=data.session.user; if(u){S.userEmail=(u.email||'').toLowerCase(); if(u.user_metadata)applyProfile(u.user_metadata);} } }).catch(()=>{});
 }
 nav('splash');
 </script>
