@@ -3268,7 +3268,7 @@ if(SB){
 window.addEventListener('offline',()=>{try{toast('Você está sem conexão. Algumas ações podem não funcionar.');}catch(e){}});
 window.addEventListener('online',()=>{try{toast('Conexão restabelecida ✓');}catch(e){}});
 let _onboarded=true; try{_onboarded=!!localStorage.getItem('vs_onboarded');}catch(e){}
-if(!_onboarded){ S.obStep=0; nav('onboarding'); } else { nav('splash'); }
+nav('splash');
 </script>
 </body>
 </html>
