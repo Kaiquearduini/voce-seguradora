@@ -680,9 +680,9 @@ const PRODS={
   vidacoletivo:{name:'Vida Coletivo',cat:'familiar',icon:'family',sub:'Proteção da equipe da sua empresa',
     flow:['cnpj','n_func','faixa_etaria','wa'],price:{m:'R$ 12,00',a:'R$ 8,40',at:'R$ 100,80',badge:'Por funcionário/mês',cov:'R$ 50.000,00/vida'}},
   vidaativa:{name:'Vida Ativa+',cat:'familiar',icon:'heart',sub:'Seguro de vida individual completo',
-    flow:['cpf','nascimento','profissao','capital_vida','beneficiario','wa'],price:{m:'R$ 29,90',a:'R$ 20,90',at:'R$ 250,80',badge:'3 meses grátis',cov:'Até R$ 500.000,00'}},
+    flow:['cpf','nascimento','profissao','capital_vida','beneficiario','wa'],price:{m:'R$ 29,90',a:'R$ 20,90',at:'R$ 250,80',badge:'3 meses grátis',cov:'Até R$ 500.000'}},
   acidentes:{name:'Acidentes Pessoais',cat:'familiar',icon:'bolt',sub:'Cobertura em caso de acidentes',
-    flow:['cpf','nascimento','profissao','capital_ap','wa'],price:{m:'R$ 19,90',a:'R$ 13,90',at:'R$ 166,80',badge:'Sem carência',cov:'Até R$ 100.000,00'}},
+    flow:['cpf','nascimento','profissao','capital_ap','wa'],price:{m:'R$ 19,90',a:'R$ 13,90',at:'R$ 166,80',badge:'Sem carência',cov:'Até R$ 100.000'}},
   prestamista:{name:'Prestamista',cat:'familiar',icon:'doc',sub:'Quite sua dívida em caso de imprevistos',
     flow:['cpf','valor_divida','prazo_emp','banco_emp','wa'],price:{m:'R$ 39,90',a:'R$ 27,90',at:'R$ 334,80',badge:'Cobre morte e invalidez',cov:'Valor da dívida'}},
   auto:{name:'Automóvel',cat:'mobilidade',icon:'car',sub:'Proteção completa para seu veículo',
@@ -690,7 +690,7 @@ const PRODS={
   celular:{name:'Celular',cat:'mobilidade',icon:'phone',sub:'Roubo, quebra e danos no aparelho',
     flow:['cpf','modelo','wa'],price:{m:'R$ 47,90',a:'R$ 33,50',at:'R$ 402,00',badge:'Ative hoje mesmo',cov:'Valor do aparelho'}},
   cartao:{name:'Cartão Protegido',cat:'financeiro',icon:'credit',sub:'Proteção contra fraudes e roubo',
-    flow:['cpf','banco_cartao','limite_cartao','wa'],price:{m:'R$ 14,90',a:'R$ 10,40',at:'R$ 124,80',badge:'Cobertura imediata',cov:'Até R$ 10.000,00'}},
+    flow:['cpf','banco_cartao','limite_cartao','wa'],price:{m:'R$ 14,90',a:'R$ 10,40',at:'R$ 124,80',badge:'Cobertura imediata',cov:'Até R$ 10.000'}},
   pix:{name:'Pix Protegido',cat:'financeiro',icon:'pix',sub:'Cobertura para transações PIX',
     flow:['cpf','banco_pix','limite_pix','wa'],price:{m:'R$ 9,90',a:'R$ 6,90',at:'R$ 82,80',badge:'4 acionamentos/ano',cov:'R$ 5.000,00/ano'}},
   bolsa:{name:'Bolsa Protegida',cat:'financeiro',icon:'bag',sub:'Proteja seus pertences pessoais',
@@ -718,16 +718,16 @@ const COVS={
 const RES={
   lmi:{min:50000,max:1000000,step:10000,default:100000},
   vigencias:[{v:12,n:'12 meses',fator:1.00},{v:24,n:'24 meses',fator:0.97,sel:'−3%'},{v:36,n:'36 meses',fator:0.95,sel:'−5%'}],
-  tiposImovel:[{v:'apto',n:'Apartamento',s:'Uso habitual',ico:'building'},{v:'casa',n:'Casa',s:'Uso habitual',ico:'house'},{v:'casa_cond',n:'Casa em condomínio',s:'Condomínio fechado',ico:'house'}],
-  ocupacoes:[{v:'habitual',n:'Habitual',s:'Moradia o ano todo',ico:'house'},{v:'veraneio',n:'Veraneio',s:'Uso em temporadas',ico:'sun'}],
+  tiposImovel:[{v:'apto',n:'Apartamento',s:'Uso habitual',ico:'building'},{v:'apto_cond',n:'Apartamento em condomínio',s:'Condomínio fechado',ico:'building'},{v:'casa',n:'Casa',s:'Uso habitual',ico:'house'},{v:'casa_cond',n:'Casa em condomínio',s:'Condomínio fechado',ico:'house'}],
+  ocupacoes:[{v:'habitual',n:'Habitual',s:'Residência fixa',ico:'house'},{v:'veraneio',n:'Veraneio',s:'Uso em temporadas',ico:'sun'}],
   perfis:[{v:'prop_morador',n:'Proprietário morador',s:'Imóvel próprio onde moro',ico:'key'},{v:'prop_locador',n:'Proprietário locador',s:'Imóvel meu, alugado a terceiros',ico:'doc'},{v:'inquilino',n:'Inquilino',s:'Moro de aluguel',ico:'family'}],
   // Triagem de elegibilidade (respostas "sim" = recusa, conforme documento)
   elegibilidade:[
-    {k:'compart',q:'O imóvel é de uso coletivo ou compartilhado?',s:'Pensão, alojamento, pousada, cortiço, asilo, co-living, república, ocupação rotativa.'},
+    {k:'compart',q:'O imóvel é usado como moradia coletiva ou dividido entre pessoas sem vínculo familiar?',s:'Ex.: pensão, pensionato, alojamento, pousada, cortiço, asilo, co-living, república ou troca frequente de ocupantes.'},
     {k:'construcao',q:'A construção é palafita, flutuante ou tem mais de 25% em madeira?',s:'Restrição construtiva do produto.'},
     {k:'rural',q:'O imóvel fica em zona rural ou é isolado sem acesso regular?',s:'Restrição de localização do produto.'},
   ],
-  modalidades:[{v:'predio_conteudo',n:'Prédio + Conteúdo',s:'Estrutura e bens (recomendado)',rec:true},{v:'predio',n:'Prédio',s:'Somente a estrutura'},{v:'conteudo',n:'Conteúdo',s:'Somente os bens'}],
+  modalidades:[{v:'predio_conteudo',n:'Imóvel + Conteúdo',s:'A estrutura e os bens (recomendado)',rec:true},{v:'predio',n:'Somente o imóvel',s:'Apenas a estrutura'},{v:'conteudo',n:'Somente o conteúdo',s:'Apenas os bens'}],
   // Cobertura básica (obrigatória) + 21 adicionais. txa = taxa anual ILUSTRATIVA sobre o LMI.
   basica:{id:1,nome:'Cobertura Básica',grupo:'Danos Materiais',txa:0.0025,
     desc:'Incêndio, queda de raio, explosão, fumaça e queda de aeronaves.',obrig:true},
@@ -1790,10 +1790,11 @@ function rResid(){
     body=`<div style="font-size:12px;font-weight:800;color:var(--txt3);margin-bottom:8px">ASSISTÊNCIA RESIDENCIAL</div>`+
       RES.assist.map(o=>_resOpt('assist',{v:o.v,n:o.n,s:'+ '+fmtBRL(o.preco)+'/mês · '+o.servicos.slice(0,3).join(', ')+'…'},r.assist===o.v)).join('')+
       `<div style="font-size:12px;font-weight:800;color:var(--txt3);margin:16px 0 8px">ASSISTÊNCIA PET (OPCIONAL)</div>`+
-      RES.pet.map(o=>_resOpt('pet',{v:o.v,n:o.n,s:o.preco?('+ '+fmtBRL(o.preco)+'/mês'):'Não incluir'},r.pet===o.v)).join('');
+      RES.pet.map(o=>_resOpt('pet',{v:o.v,n:o.n,s:o.preco?('+ '+fmtBRL(o.preco)+'/mês · '+o.servicos.slice(0,3).join(', ')+'…'):'Não incluir'},r.pet===o.v)).join('');
   } else if(step==='revisao'){
     title='Resumo da sua proteção'; sub='Confira tudo antes de contratar.'; btn='Contratar agora'; nextA='resid-contratar';
     const q=resPremio();
+    const iofM=_iofCalc(fmtBRL(q.mensal),'casa'); const iofA=_iofCalc(fmtBRL(q.anual),'casa');
     const selCov=RES.adicionais.filter(c=>r.cobs[c.id]);
     const modN=(RES.modalidades.find(m=>m.v===r.modalidade)||{}).n;
     const frN=(RES.franquiaTipos.find(f=>f.v===r.franquia)||{}).n;
@@ -1801,16 +1802,20 @@ function rResid(){
     const ptN=(RES.pet.find(p=>p.v===r.pet)||{}).n;
     const rowsum=(k,v)=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(0,36,48,.06)"><span style="font-size:13px;color:var(--txt2)">${k}</span><span style="font-size:13px;font-weight:700;color:var(--txt1);text-align:right;max-width:60%">${v}</span></div>`;
     body=`<div style="background:var(--navy);border-radius:22px;padding:22px;margin-bottom:16px;position:relative;overflow:hidden">
-      <div style="display:inline-flex;background:#46EF80;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:800;color:var(--navy);margin-bottom:14px">ESTIMATIVA</div>
-      <div style="font-size:42px;font-weight:800;color:#46EF80;line-height:1;letter-spacing:-1.5px">${fmtBRL(q.mensal)}</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:6px">por mês · ${fmtBRL(q.anual)}/ano</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:9px">Total mensal</div>
+      <div style="font-size:42px;font-weight:800;color:#46EF80;line-height:1;letter-spacing:-1.5px">${fmtBRL(iofM.total)}</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:6px">por mês · ${fmtBRL(iofA.total)}/ano</div>
+      <div style="margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;justify-content:space-between"><span style="font-size:12.5px;color:rgba(255,255,255,.6)">Prêmio líquido</span><span style="font-size:12.5px;font-weight:700;color:#fff">${fmtBRL(iofM.net)}/mês</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="font-size:12.5px;color:rgba(255,255,255,.6)">IOF (${_iofPct('casa')})</span><span style="font-size:12.5px;font-weight:700;color:#fff">${fmtBRL(iofM.iof)}/mês</span></div>
+      </div>
     </div>
     <div style="background:#fff;border-radius:16px;padding:8px 16px;margin-bottom:14px">
       ${rowsum('Modalidade',modN)}${rowsum('Limite de indenização',fmtBRL0(r.lmi))}${rowsum('Vigência',r.vig+' meses')}${rowsum('Coberturas',(1+selCov.length)+' (básica + '+selCov.length+')')}${rowsum('Franquia',frN)}${rowsum('Assistência',asN)}${rowsum('Pet',ptN)}
     </div>
     <div style="background:linear-gradient(135deg,rgba(70,239,128,.16),rgba(39,153,137,.06));border:1px solid rgba(70,239,128,.35);border-radius:16px;padding:15px 16px;display:flex;gap:13px;align-items:center;margin-bottom:6px">
       <div style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#46EF80,#23c46a);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 5px 14px rgba(70,239,128,.42)">${ico('bag',22,'#002430')}</div>
-      <div style="font-size:12.5px;color:var(--txt2);line-height:1.5"><b style="font-size:13.5px;color:var(--txt1)">${RES.sorteio.nome}</b> <span style="font-size:14px">🍀</span><br>Concorra a <b style="color:#1f9e74">${fmtBRL0(RES.sorteio.premio)}</b> em sorteio mensal enquanto sua apólice estiver ativa.</div>
+      <div style="font-size:12.5px;color:var(--txt2);line-height:1.5"><b style="font-size:13.5px;color:var(--txt1)">${RES.sorteio.nome}</b> <span style="font-size:14px">🍀</span><br>Concorra a <b style="color:#1f9e74">${fmtBRL0(RES.sorteio.premio)}</b> em sorteio mensal enquanto sua apólice estiver ativa. <b style="color:#1f9e74">Sem custo para você:</b> a participação é gratuita.</div>
     </div>`;
   }
   return `<div class="scr" style="background:var(--surf)">
@@ -1858,7 +1863,7 @@ ${nb({back:'result-back',d:false,cancel:true})}
 <div style="margin:0 20px 16px;background:var(--navy);border-radius:24px;padding:24px;position:relative;overflow:hidden;flex-shrink:0">
   <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(70,239,128,.05)"></div>
   <div style="position:absolute;bottom:-30px;left:-30px;width:100px;height:100px;border-radius:50%;background:rgba(39,153,137,.06)"></div>
-  <div style="display:inline-flex;align-items:center;gap:6px;background:#46EF80;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:800;color:var(--navy);margin-bottom:20px">${pr.badge}</div>
+  ${pr.badge?`<div style="display:inline-flex;align-items:center;gap:6px;background:#46EF80;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:800;color:var(--navy);margin-bottom:20px">${pr.badge}</div>`:''}
   <div style="font-size:46px;font-weight:800;color:#46EF80;line-height:1;letter-spacing:-1.5px">${price}</div>
   <div style="font-size:14px;color:rgba(255,255,255,.45);margin:6px 0">/ mês${S.plan==='anual'?' · cobrado anualmente':''}</div>
   <div style="padding-top:14px;margin-top:14px;border-top:1px solid rgba(255,255,255,.08)">
@@ -2525,7 +2530,7 @@ function rHome(){
   }
 
   const cards=all.map((p,pi)=>`
-  <div class="pol-card" data-a="open-pol" style="display:flex;flex-direction:row;overflow:hidden;margin-bottom:12px;border-radius:20px;background:#fff;box-shadow:0 2px 12px rgba(0,36,48,.07),0 8px 28px rgba(0,36,48,.04);border:1px solid rgba(0,36,48,.06);cursor:pointer;transition:transform .14s,box-shadow .14s;animation:fadeUp .45s ease ${pi*.07}s both" ontouchstart="this.style.transform='scale(.985)';this.style.boxShadow='0 1px 6px rgba(0,36,48,.06)'" ontouchend="this.style.transform='';this.style.boxShadow=''" onmousedown="this.style.transform='scale(.985)'" onmouseup="this.style.transform=''">
+  <div class="pol-card" data-a="open-pol" style="display:flex;flex-direction:row;overflow:hidden;margin-bottom:14px;border-radius:20px;background:#fff;box-shadow:0 2px 10px rgba(0,36,48,.10),0 10px 30px rgba(0,36,48,.09);border:1.5px solid rgba(0,36,48,.14);cursor:pointer;transition:transform .14s,box-shadow .14s;animation:fadeUp .45s ease ${pi*.07}s both" ontouchstart="this.style.transform='scale(.985)';this.style.boxShadow='0 1px 6px rgba(0,36,48,.10)'" ontouchend="this.style.transform='';this.style.boxShadow=''" onmousedown="this.style.transform='scale(.985)'" onmouseup="this.style.transform=''">
     <div style="width:4px;flex-shrink:0;background:linear-gradient(180deg,${p.accent} 0%,${p.accent}88 100%)"></div>
     <div style="flex:1;padding:16px 16px 14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
@@ -3093,7 +3098,7 @@ function bind(el){
     else if(a==='res-q'){ S.res.quest[b.dataset.k]=(b.dataset.v==='1'); resRerender(); }
     else if(a==='res-prot'){ const v=b.dataset.v,arr=S.res.quest.prot,i=arr.indexOf(v); if(i<0)arr.push(v);else arr.splice(i,1); resRerender(); }
     else if(a==='res-chat'){ nav('chat'); }
-    else if(a==='resid-contratar'){ const q=resPremio(); PRODS.casa.price={m:fmtBRL(q.mensal),a:fmtBRL(q.mensal),at:fmtBRL(q.anual),badge:'Estimativa',cov:fmtBRL0(S.res.lmi)}; S.plan='mensal'; resSavePending(); S.res.step='revisao'; S.termosFrom='resid'; nav('termos'); }
+    else if(a==='resid-contratar'){ const q=resPremio(); PRODS.casa.price={m:fmtBRL(q.mensal),a:fmtBRL(q.mensal),at:fmtBRL(q.anual),badge:'',cov:fmtBRL0(S.res.lmi)}; S.plan='mensal'; resSavePending(); S.res.step='revisao'; S.termosFrom='resid'; nav('termos'); }
     else if(a==='go-result')nav('result');
     else if(a==='termos-back'){ if(S.termosFrom==='resid'){ if(!S.res)resInit(); S.res.step='revisao'; nav('resid'); } else nav('result'); }
     else if(a==='result-back'){ if(S.prod&&PRODS[S.prod]&&PRODS[S.prod].resid){ if(!S.res)resInit(); S.res.step='revisao'; nav('resid'); } else { const fl=gFlow(); S.step=fl.length; formBack(); } }
@@ -3149,7 +3154,7 @@ function bind(el){
     else if(a==='go-success')nav('success');
     else if(a==='suc-criar'){ nav('cadastro'); try{const e=document.querySelector('#cad-email'); if(e&&S.form.email)e.value=S.form.email; const c=document.querySelector('#cad-cpf'); if(c&&S.form.cpf)c.value=S.form.cpf;}catch(_e){} }
     else if(a==='suc-entrar'){ nav('login'); try{const e=document.querySelector('#login-email'); if(e&&S.form.email)e.value=S.form.email;}catch(_e){} }
-    else if(a==='ativar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; if(PRODS[q.prod]&&PRODS[q.prod].resid){ if(q.snap&&q.snap.res){S.res=Object.assign({},q.snap.res);}else{resInit();} const qp=resPremio(); PRODS.casa.price={m:fmtBRL(qp.mensal),a:fmtBRL(qp.mensal),at:fmtBRL(qp.anual),badge:'Estimativa',cov:fmtBRL0(S.res.lmi)}; nav('payment'); } else nav('payment'); } }
+    else if(a==='ativar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; if(PRODS[q.prod]&&PRODS[q.prod].resid){ if(q.snap&&q.snap.res){S.res=Object.assign({},q.snap.res);}else{resInit();} const qp=resPremio(); PRODS.casa.price={m:fmtBRL(qp.mensal),a:fmtBRL(qp.mensal),at:fmtBRL(qp.anual),badge:'',cov:fmtBRL0(S.res.lmi)}; nav('payment'); } else nav('payment'); } }
     else if(a==='alterar-cotacao'){ const q=_readPending().find(x=>String(x.ts)===String(b.dataset.q)); if(q){ S.prod=q.prod; S.plan=q.plan||'mensal'; S.form=Object.assign({},q.form||{}); S._activatingTs=q.ts; if(PRODS[q.prod]&&PRODS[q.prod].resid){ if(q.snap&&q.snap.res){S.res=Object.assign({},q.snap.res);}else{resInit();} S.res.step='revisao'; nav('resid'); } else nav('result'); } }
     else if(a==='fechar-cotacao'){ removePendingQuote(b.dataset.q); toast('Cotação removida'); goTo('home',rHome()); }
     else if(a==='sel-cat'||a==='noop'){}
