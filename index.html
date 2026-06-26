@@ -131,7 +131,7 @@ body{background:#0e1e27;font-family:'Cera Pro','Helvetica Neue',Helvetica,Arial,
 .inft{font-size:12.5px;color:rgba(255,255,255,.45);line-height:1.5}
 
 /* ── SCROLL ── */
-.scrl{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.scrl{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .scrl::-webkit-scrollbar{display:none}
 
 /* ── PLAN TOGGLE ── */
@@ -1040,9 +1040,10 @@ function rEndosso(){
   });
   const deltaTxt=delta===0?'sem alteração no preço':(delta>0?'+ '+fmtBRL(delta)+'/mês':'− '+fmtBRL(Math.abs(delta))+'/mês');
   const deltaCol=delta>0?'#E5484D':'#279989';
-  return `<div class="scr" style="background:var(--surf);overflow-y:auto">
+  return `<div class="scr" style="background:var(--surf)">
   ${sb(false)}
   ${nb({back:'go-apolice',d:false,cancel:false,title:'Endosso'})}
+  <div class="scrl">
   <div style="padding:4px 24px 0;flex-shrink:0">
     <div style="font-size:21px;font-weight:800;color:var(--txt1);line-height:1.2">Alterar sua apólice</div>
     <div style="font-size:13px;color:var(--txt2);margin-top:5px;line-height:1.45">Ajuste o LMI, inclua ou remova coberturas e mude as assistências. O novo valor é recalculado na hora.</div>
@@ -1065,6 +1066,7 @@ function rEndosso(){
     <div style="font-size:12px;font-weight:800;color:var(--txt3);text-transform:uppercase;margin:14px 0 8px">Assistência pet</div>
     ${RES.pet.map(o=>_resOpt('pet',{v:o.v,n:o.n,s:o.preco?('+ '+fmtBRL(o.preco)+'/mês'):'Não incluir'},r.pet===o.v)).join('')}
   </div>
+  </div>
   <div style="padding:12px 24px 34px;flex-shrink:0">
     <div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--card-sh)">
       <div><div style="font-size:11px;color:var(--txt3);font-weight:700">NOVO VALOR MENSAL</div><div style="font-size:24px;font-weight:900;color:var(--txt1)">${fmtBRL(novo)}</div></div>
@@ -1079,9 +1081,10 @@ function rCancelarApolice(){
   const days=Math.max(1,Math.round((Date.now()-(p.ts||Date.now()))/864e5));
   let pct=100; for(const par of RES.prazoCurto){ if(days<=par[0]){pct=par[1];break;} }
   const anual=(r.premio||0)*12; const retido=anual*pct/100;
-  return `<div class="scr" style="background:var(--surf);overflow-y:auto">
+  return `<div class="scr" style="background:var(--surf)">
   ${sb(false)}
   ${nb({back:'go-apolice',d:false,cancel:false,title:'Cancelar apólice'})}
+  <div class="scrl">
   <div style="padding:8px 24px 24px">
     <div style="width:74px;height:74px;border-radius:22px;background:rgba(229,72,77,.1);display:flex;align-items:center;justify-content:center;margin:8px 0 16px">${ico('lock',34,'#E5484D')}</div>
     <div style="font-size:22px;font-weight:800;color:var(--txt1);margin-bottom:10px">Cancelar sua apólice?</div>
@@ -1090,6 +1093,7 @@ function rCancelarApolice(){
       ${[['Tempo de vigência decorrido',days+' dia'+(days>1?'s':'')],['Percentual retido (prazo curto)',pct+'%'],['Prêmio anual de referência',fmtBRL0(anual)],['Valor retido estimado',fmtBRL0(retido)]].map((rw,i,a)=>`<div style="display:flex;justify-content:space-between;padding:12px 0;${i<a.length-1?'border-bottom:1px solid var(--border)':''}"><span style="font-size:13px;color:var(--txt2)">${rw[0]}</span><span style="font-size:13px;font-weight:700;color:var(--txt1)">${rw[1]}</span></div>`).join('')}
     </div>
     <div style="font-size:11.5px;color:var(--txt3);line-height:1.5">Valores ilustrativos pela tabela de prazo curto do produto. O cancelamento efetivo e eventual restituição seguem as Condições Gerais.</div>
+  </div>
   </div>
   <div style="padding:12px 24px 34px;flex-shrink:0">
     <button class="btn" data-a="confirmar-cancelamento" style="background:#E5484D;color:#fff;margin-bottom:10px">Confirmar cancelamento</button>
@@ -1419,7 +1423,7 @@ function rTermos(){
   return`<div class="scr" style="background:var(--surf)">
   ${sb(false)}
   ${nb({back:'termos-back',d:false,cancel:true,title:'Termos de contratação'})}
-  <div style="flex:1;overflow-y:auto;padding:20px 24px;-webkit-overflow-scrolling:touch" id="termos-scroll">
+  <div style="flex:1;overflow-y:auto;padding:20px 24px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain" id="termos-scroll">
     <div style="font-size:17px;font-weight:800;color:var(--txt1);margin-bottom:4px">Condições gerais do seguro</div>
     <div style="font-size:12px;color:var(--txt3);margin-bottom:20px">Registro SUSEP em processo · Leia com atenção antes de contratar</div>
     ${['Objeto do seguro e coberturas','Exclusões e franquias','Prazo e renovação automática','Cancelamento e carência','Sinistros e indenizações','Proteção de dados (LGPD)'].map((sec,i)=>`
@@ -1518,7 +1522,7 @@ ${sb(true)}
 ${nb({back:'form-back',d:true})}
 <div class="prog"><div class="prog-f" style="width:${pct.toFixed(0)}%"></div></div>
 ${stepDots(flow,idx)}
-<div style="padding:0 24px;flex:1;overflow-y:auto">
+<div style="padding:0 24px;flex:1;overflow-y:auto;overscroll-behavior:contain">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
     <div style="width:28px;height:28px;border-radius:8px;background:rgba(70,239,128,.1);display:flex;align-items:center;justify-content:center">${ico(p.icon,16,'#46EF80')}</div>
     <div style="font-size:12px;font-weight:700;color:#46EF80;letter-spacing:.08em;text-transform:uppercase">${p.name} · ${idx+1}/${flow.length}</div>
@@ -1556,7 +1560,7 @@ ${sb(true)}
 ${nb({back:'form-back',d:true})}
 <div class="prog"><div class="prog-f" style="width:${pct.toFixed(0)}%"></div></div>
 ${stepDots(flow,idx)}
-<div style="padding:0 24px;flex:1;overflow-y:auto">
+<div style="padding:0 24px;flex:1;overflow-y:auto;overscroll-behavior:contain">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
     <div style="width:28px;height:28px;border-radius:8px;background:rgba(70,239,128,.1);display:flex;align-items:center;justify-content:center">${ico(p.icon,16,'#46EF80')}</div>
     <div style="font-size:12px;font-weight:700;color:#46EF80;letter-spacing:.08em;text-transform:uppercase">${p.name} · ${idx+1}/${flow.length}</div>
@@ -1677,7 +1681,7 @@ function _resRecusa(){
   if(r.elig.compart==='sim')reasons.push('Imóvel de uso coletivo ou compartilhado (pensão, alojamento, pousada, cortiço, asilo, co-living, república ou ocupação rotativa).');
   if(r.elig.construcao==='sim')reasons.push('Construção em palafita, imóvel flutuante ou com mais de 25% em madeira.');
   if(r.elig.rural==='sim')reasons.push('Imóvel em zona rural ou isolado, sem acesso regular.');
-  return `<div class="scr" style="background:var(--surf);overflow-y:auto">
+  return `<div class="scr" style="background:var(--surf)">
   ${sb(false)}
   ${nb({back:'res-back',d:false,cancel:true,title:'Seguro Residencial'})}
   <div class="scrl" style="padding:8px 28px 24px;display:flex;flex-direction:column;align-items:center;text-align:center">
@@ -1797,9 +1801,10 @@ function rResid(){
       <div style="font-size:12.5px;color:var(--txt2);line-height:1.5"><b style="font-size:13.5px;color:var(--txt1)">${RES.sorteio.nome}</b> <span style="font-size:14px">🍀</span><br>Concorra a <b style="color:#1f9e74">${fmtBRL0(RES.sorteio.premio)}</b> em sorteio mensal enquanto sua apólice estiver ativa.</div>
     </div>`;
   }
-  return `<div class="scr" style="background:var(--surf);overflow-y:auto">
+  return `<div class="scr" style="background:var(--surf)">
   ${sb(false)}
   ${nb({back:idx<=0?'go-cats':'res-back',d:false,cancel:true,title:'Seguro Residencial'})}
+  <div class="scrl">
   <div style="padding:0 24px 4px;flex-shrink:0">
     <div style="height:4px;background:rgba(0,36,48,.08);border-radius:2px;overflow:hidden;margin-bottom:14px"><div style="height:100%;width:${Math.round((idx+1)/total*100)}%;background:#279989;border-radius:2px;transition:width .3s"></div></div>
     <div style="font-size:11px;color:var(--txt3);font-weight:700;margin-bottom:5px">PASSO ${idx+1} DE ${total}</div>
@@ -1807,6 +1812,7 @@ function rResid(){
     ${sub?`<div style="font-size:13px;color:var(--txt2);margin-top:5px;line-height:1.45">${sub}</div>`:''}
   </div>
   <div style="padding:14px 24px 8px">${body}</div>
+  </div>
   <div style="padding:12px 24px 34px;flex-shrink:0">
     <button class="btn btn-neon" data-a="${nextA}"${canNext?'':' disabled style="opacity:.45"'}>${btn}</button>
   </div>
@@ -1820,9 +1826,10 @@ function rResult(){
     <div style="width:22px;height:22px;flex-shrink:0">${ico('check',22,'#279989')}</div>
     <div style="font-size:14px;color:var(--txt1);line-height:1.4">${c}</div>
   </div>`).join('');
-  return`<div class="scr" style="background:var(--surf);overflow-y:auto">
+  return`<div class="scr" style="background:var(--surf)">
 ${sb(false)}
 ${nb({back:'result-back',d:false,cancel:true})}
+<div class="scrl">
 <div style="padding:0 24px 8px;flex-shrink:0">
   <div style="font-size:13px;color:var(--txt2);font-weight:500;margin-bottom:4px">Cotação para</div>
   <div style="display:flex;align-items:center;gap:10px">
@@ -1860,6 +1867,7 @@ ${nb({back:'result-back',d:false,cancel:true})}
     <div>${ico('lock',18,'#279989')}</div>
     <div style="font-size:12px;color:var(--txt2);line-height:1.4">Seus dados são protegidos com criptografia de ponta a ponta. Regulada pela SUSEP.</div>
   </div>
+</div>
 </div>
 <div style="padding:0 24px 48px;flex-shrink:0">
   <button class="btn btn-neon" data-a="go-termos" style="margin-bottom:12px">Contratar agora</button>
@@ -2086,7 +2094,7 @@ function rSuccess(){
   const payLabel={pix:'PIX',card:'Cartão de Crédito',boleto:'Boleto'}[S.payMethod]||'';
   return`<div class="scr" style="background:var(--navy)">
 ${sb(true)}
-<div style="flex:1;overflow-y:auto">
+<div style="flex:1;overflow-y:auto;overscroll-behavior:contain">
 <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 28px 24px;box-sizing:border-box;text-align:center">
   <div style="width:74px;height:74px;margin-bottom:13px" class="ci">
     <svg viewBox="0 0 100 100" fill="none" style="width:74px;height:74px">
@@ -2133,9 +2141,10 @@ function rComoIndicacao(){
     'O crédito é válido enquanto as duas apólices (a sua e a do indicado) estiverem vigentes.',
     'Programa promocional, sujeito a regras, limites e disponibilidade; pode ser alterado ou encerrado mediante aviso.',
   ];
-  return`<div class="scr" style="background:var(--surf);overflow-y:auto">
+  return`<div class="scr" style="background:var(--surf)">
   ${sb(false)}
   ${nb({back:'go-indicacoes',d:false,cancel:false,title:'Como funciona'})}
+  <div class="scrl">
   <div style="padding:8px 24px 36px">
     <div style="width:60px;height:60px;border-radius:18px;background:rgba(70,239,128,.14);display:flex;align-items:center;justify-content:center;margin:6px 0 16px">${ico('family',30,'#279989')}</div>
     <div style="font-size:22px;font-weight:800;color:var(--txt1);line-height:1.25;margin-bottom:6px">Indique e ganhe bônus</div>
@@ -2148,6 +2157,7 @@ function rComoIndicacao(){
       <div style="font-size:11px;font-weight:800;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Regras do programa</div>
       ${regras.map(r=>`<div style="display:flex;gap:9px;align-items:flex-start;margin-bottom:9px"><div style="flex-shrink:0;margin-top:2px">${ico('check',15,'#46EF80')}</div><div style="font-size:12.5px;color:var(--txt2);line-height:1.45">${r}</div></div>`).join('')}
     </div>
+  </div>
   </div>
   <div style="padding:0 24px 36px;flex-shrink:0">
     <button class="btn btn-neon" data-a="copy-link">Copiar meu link de indicação</button>
